@@ -7,9 +7,25 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
 enum UserRole {
   USER
   ADMIN
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+  REVIEWER
+}
+
+enum OrgStatus {
+  ACTIVE
+  SUSPENDED
 }
 
 enum Complexity {
@@ -22,6 +38,39 @@ enum RiskLevel {
   LOW
   MEDIUM
   HIGH
+}
+
+enum ConfidenceLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// Content lifecycle used by knowledge entities (pathways, sources).
+/// Full workflow logic is implemented in Stage 4.5; the states exist now so
+/// migrations do not have to rewrite enums later.
+enum ContentStatus {
+  DRAFT
+  SOURCE_VERIFIED
+  REVIEWED
+  LEGAL_FLAG_CHECK
+  APPROVED
+  PUBLISHED
+  STALE
+  RETIRED
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATED
+  ARCHIVED
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+  EXPIRED
 }
 
 enum PaymentStatus {
@@ -44,12 +93,19 @@ enum PlanType {
   BUSINESS
 }
 
+// ---------------------------------------------------------------------------
+// Identity & tenancy
+// ---------------------------------------------------------------------------
+
 model User {
   id               String    @id @default(cuid())
   name             String
   email            String    @unique
   passwordHash     String
   role             UserRole  @default(USER)
+  // --- Compatibility mirror of the primary company profile. CompanyProfile is
+  // the canonical home for this data (Stage 3). These columns are kept in sync
+  // by onboarding/registration so existing read paths keep working.
   companyName      String?
   country          String?
   sectorId         String?
@@ -64,12 +120,15 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
-  sector       Sector?       @relation(fields: [sectorId], references: [id])
-  assessments  Assessment[]
-  requests     ReportRequest[]
-  payments     Payment[]
-  auditLogs    AuditLog[]
-  sessions     Session[]
+  sector      Sector?                  @relation(fields: [sectorId], references: [id])
+  assessments Assessment[]
+  requests    ReportRequest[]
+  payments    Payment[]
+  auditLogs   AuditLog[]
+  sessions    Session[]
+  memberships OrganizationMembership[]
+  reports     Report[]
+  reviews     ContentReviewHistory[]
 
   @@index([email])
 }
@@ -88,6 +147,73 @@ model Session {
   @@index([tokenHash])
 }
 
+model Organization {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  status    OrgStatus @default(ACTIVE)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  memberships   OrganizationMembership[]
+  profile       CompanyProfile?
+  assessments   Assessment[]
+  reports       Report[]
+  payments      Payment[]
+  subscriptions Subscription[]
+
+  @@index([status])
+}
+
+model OrganizationMembership {
+  id             String         @id @default(cuid())
+  organizationId String
+  userId         String
+  role           MembershipRole @default(MEMBER)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+}
+
+/// Non-sensitive company context. Separated from authentication (User).
+/// One profile per organization.
+model CompanyProfile {
+  id                String   @id @default(cuid())
+  organizationId    String   @unique
+  companyName       String?
+  originCountry     String?
+  companyType       String?
+  sectorId          String?
+  activityId        String?
+  entryGoal         String?
+  entryObjectiveId  String?
+  operatingModel    String?
+  targetRegion      String?
+  marketEntryStatus String?
+  locale            String   @default("en")
+  onboardingDone    Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sector         Sector?         @relation(fields: [sectorId], references: [id])
+  activity       Activity?       @relation(fields: [activityId], references: [id])
+  entryObjective EntryObjective? @relation(fields: [entryObjectiveId], references: [id])
+
+  @@index([sectorId])
+  @@index([activityId])
+}
+
+// ---------------------------------------------------------------------------
+// Reference / taxonomy
+// ---------------------------------------------------------------------------
+
 model Sector {
   id        String   @id @default(cuid())
   slug      String   @unique
@@ -97,8 +223,41 @@ model Sector {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  users         User[]
-  requirements  Requirement[]
+  users           User[]
+  requirements    Requirement[]
+  activities      Activity[]
+  companyProfiles CompanyProfile[]
+  pathways        Pathway[]
+}
+
+model Activity {
+  id        String   @id @default(cuid())
+  sectorId  String?
+  slug      String   @unique
+  nameEn    String
+  nameAr    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sector          Sector?          @relation(fields: [sectorId], references: [id])
+  companyProfiles CompanyProfile[]
+  pathways        Pathway[]
+
+  @@index([sectorId])
+}
+
+/// Canonical entry objectives (mirrors ENTRY_GOALS constants).
+model EntryObjective {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nameEn    String
+  nameAr    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  companyProfiles CompanyProfile[]
 }
 
 model Authority {
@@ -111,53 +270,196 @@ model Authority {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  requirements Requirement[]
-  officialLinks OfficialLink[]
+  requirements    Requirement[]
+  officialLinks   OfficialLink[]
+  officialSources OfficialSource[]
+  pathwaySteps    PathwayStep[]
 }
 
+/// First-class official source record with review/verification metadata.
+model OfficialSource {
+  id            String        @id @default(cuid())
+  authorityId   String?
+  title         String
+  url           String
+  language      String        @default("en")
+  jurisdiction  String        @default("SA")
+  status        ContentStatus @default(DRAFT)
+  effectiveDate DateTime?
+  lastVerified  DateTime?
+  nextReview    DateTime?
+  version       Int           @default(1)
+  reviewerId    String?
+  deletedAt     DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  authority      Authority?      @relation(fields: [authorityId], references: [id])
+  pathwaySources PathwaySource[]
+
+  @@index([authorityId])
+  @@index([status])
+  @@index([nextReview])
+}
+
+/// Legacy simple link list retained for compatibility with existing admin UI.
 model OfficialLink {
-  id          String   @id @default(cuid())
-  authorityId String?
-  titleEn     String
-  titleAr     String
-  url         String
+  id            String   @id @default(cuid())
+  authorityId   String?
+  titleEn       String
+  titleAr       String
+  url           String
   descriptionEn String?
   descriptionAr String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   authority Authority? @relation(fields: [authorityId], references: [id])
 
   @@index([authorityId])
 }
 
-model Requirement {
-  id              String     @id @default(cuid())
-  slug            String     @unique
-  titleEn         String
-  titleAr         String
-  descriptionEn   String     @db.Text
-  descriptionAr   String     @db.Text
-  authorityId     String?
-  officialUrl     String?
-  appliesWhenEn   String?
-  appliesWhenAr   String?
-  complexity      Complexity @default(MEDIUM)
-  riskLevel       RiskLevel  @default(MEDIUM)
-  categoryEn      String?
-  categoryAr      String?
-  disclaimerEn    String?    @db.Text
-  disclaimerAr    String?    @db.Text
-  order           Int        @default(0)
-  isActive        Boolean    @default(true)
-  ruleKey         String?
-  sectorId        String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+// ---------------------------------------------------------------------------
+// Pathways (first-class market-entry pathways)
+// ---------------------------------------------------------------------------
 
-  authority Authority? @relation(fields: [authorityId], references: [id])
-  sector    Sector?    @relation(fields: [sectorId], references: [id])
+model Pathway {
+  id                         String        @id @default(cuid())
+  slug                       String        @unique
+  titleEn                    String
+  titleAr                    String
+  descriptionEn              String        @db.Text
+  descriptionAr              String        @db.Text
+  status                     ContentStatus @default(DRAFT)
+  version                    Int           @default(1)
+  /// Structured applicability conditions evaluated by the rules engine (Stage 4).
+  applicability              Json?
+  complexity                 Complexity    @default(MEDIUM)
+  riskLevel                  RiskLevel     @default(MEDIUM)
+  sectorId                   String?
+  activityId                 String?
+  requiresProfessionalReview Boolean       @default(false)
+  requiresVerification       Boolean       @default(true)
+  effectiveDate              DateTime?
+  lastReviewed               DateTime?
+  nextReview                 DateTime?
+  reviewerId                 String?
+  deletedAt                  DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+
+  sector          Sector?             @relation(fields: [sectorId], references: [id])
+  activity        Activity?           @relation(fields: [activityId], references: [id])
+  steps           PathwayStep[]
+  sources         PathwaySource[]
+  assumptions     PathwayAssumption[]
+  recommendations Recommendation[]
+
+  @@index([status])
+  @@index([sectorId])
+  @@index([activityId])
+  @@index([nextReview])
+}
+
+model PathwayStep {
+  id                         String   @id @default(cuid())
+  pathwayId                  String
+  order                      Int      @default(0)
+  titleEn                    String
+  titleAr                    String
+  descriptionEn              String   @db.Text
+  descriptionAr              String   @db.Text
+  authorityId                String?
+  requiresVerification       Boolean  @default(true)
+  requiresProfessionalReview Boolean  @default(false)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  pathway      Pathway                 @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  authority    Authority?              @relation(fields: [authorityId], references: [id])
+  dependencies PathwayStepDependency[] @relation("StepDependencies")
+  dependents   PathwayStepDependency[] @relation("StepDependents")
+
+  @@unique([pathwayId, order])
+  @@index([pathwayId])
+  @@index([authorityId])
+}
+
+/// Directed dependency edge: `step` depends on `dependsOn`. Both steps must
+/// belong to the same pathway (enforced in application + integration tests).
+model PathwayStepDependency {
+  id          String   @id @default(cuid())
+  stepId      String
+  dependsOnId String
+  createdAt   DateTime @default(now())
+
+  step      PathwayStep @relation("StepDependencies", fields: [stepId], references: [id], onDelete: Cascade)
+  dependsOn PathwayStep @relation("StepDependents", fields: [dependsOnId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, dependsOnId])
+  @@index([stepId])
+  @@index([dependsOnId])
+}
+
+model PathwaySource {
+  id        String   @id @default(cuid())
+  pathwayId String
+  sourceId  String
+  createdAt DateTime @default(now())
+
+  pathway Pathway        @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+  source  OfficialSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  @@unique([pathwayId, sourceId])
+  @@index([pathwayId])
+  @@index([sourceId])
+}
+
+model PathwayAssumption {
+  id         String          @id @default(cuid())
+  pathwayId  String
+  textEn     String
+  textAr     String
+  confidence ConfidenceLevel @default(MEDIUM)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+
+  pathway Pathway @relation(fields: [pathwayId], references: [id], onDelete: Cascade)
+
+  @@index([pathwayId])
+}
+
+// ---------------------------------------------------------------------------
+// Requirements (legacy MVP rules — retained; superseded by Pathway in Stage 4)
+// ---------------------------------------------------------------------------
+
+model Requirement {
+  id            String     @id @default(cuid())
+  slug          String     @unique
+  titleEn       String
+  titleAr       String
+  descriptionEn String     @db.Text
+  descriptionAr String     @db.Text
+  authorityId   String?
+  officialUrl   String?
+  appliesWhenEn String?
+  appliesWhenAr String?
+  complexity    Complexity @default(MEDIUM)
+  riskLevel     RiskLevel  @default(MEDIUM)
+  categoryEn    String?
+  categoryAr    String?
+  disclaimerEn  String?    @db.Text
+  disclaimerAr  String?    @db.Text
+  order         Int        @default(0)
+  isActive      Boolean    @default(true)
+  ruleKey       String?
+  sectorId      String?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  authority       Authority?       @relation(fields: [authorityId], references: [id])
+  sector          Sector?          @relation(fields: [sectorId], references: [id])
   assessmentSteps AssessmentStep[]
 
   @@index([ruleKey])
@@ -165,36 +467,63 @@ model Requirement {
   @@index([authorityId])
 }
 
-model Assessment {
-  id              String   @id @default(cuid())
-  userId          String
-  companyOrigin   String
-  hasForeignEntity Boolean
-  sectorId        String?
-  businessActivity String?
-  hiringEmployees Boolean  @default(false)
-  sellingToGov    Boolean  @default(false)
-  needsLocalOffice Boolean @default(false)
-  invoiceCustomers Boolean @default(false)
-  sectorLicensing Boolean  @default(false)
-  launchTimeline  String?
-  isPreview       Boolean  @default(true)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+// ---------------------------------------------------------------------------
+// Assessments & recommendations
+// ---------------------------------------------------------------------------
 
-  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  steps   AssessmentStep[]
-  requests ReportRequest[]
+model Assessment {
+  id               String   @id @default(cuid())
+  userId           String
+  organizationId   String
+  companyOrigin    String
+  hasForeignEntity Boolean
+  sectorId         String?
+  businessActivity String?
+  hiringEmployees  Boolean  @default(false)
+  sellingToGov     Boolean  @default(false)
+  needsLocalOffice Boolean  @default(false)
+  invoiceCustomers Boolean  @default(false)
+  sectorLicensing  Boolean  @default(false)
+  launchTimeline   String?
+  /// Normalized, engine-ready facts derived from the raw answers.
+  normalizedFacts  Json?
+  version          Int      @default(1)
+  isPreview        Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  steps           AssessmentStep[]
+  answers         AssessmentAnswer[]
+  recommendations Recommendation[]
+  requests        ReportRequest[]
+  reports         Report[]
 
   @@index([userId])
+  @@index([organizationId])
+}
+
+/// Raw input answers, one row per question key.
+model AssessmentAnswer {
+  id           String   @id @default(cuid())
+  assessmentId String
+  key          String
+  value        Json
+  createdAt    DateTime @default(now())
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, key])
+  @@index([assessmentId])
 }
 
 model AssessmentStep {
-  id             String   @id @default(cuid())
-  assessmentId   String
-  requirementId  String
-  order          Int      @default(0)
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  assessmentId  String
+  requirementId String
+  order         Int      @default(0)
+  createdAt     DateTime @default(now())
 
   assessment  Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
   requirement Requirement @relation(fields: [requirementId], references: [id])
@@ -202,6 +531,74 @@ model AssessmentStep {
   @@unique([assessmentId, requirementId])
   @@index([assessmentId])
 }
+
+/// Explainable, traceable recommendation produced for an assessment.
+model Recommendation {
+  id                         String          @id @default(cuid())
+  assessmentId               String
+  pathwayId                  String?
+  ruleId                     String?
+  reason                     String          @db.Text
+  applicability              Json?
+  assumptions                Json?
+  uncertainty                ConfidenceLevel @default(MEDIUM)
+  requiresVerification       Boolean         @default(true)
+  requiresProfessionalReview Boolean         @default(false)
+  order                      Int             @default(0)
+  createdAt                  DateTime        @default(now())
+
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  // Retirement of a pathway must not silently delete historical recommendations.
+  pathway    Pathway?   @relation(fields: [pathwayId], references: [id], onDelete: SetNull)
+
+  @@index([assessmentId])
+  @@index([pathwayId])
+}
+
+// ---------------------------------------------------------------------------
+// Reports (immutable snapshots)
+// ---------------------------------------------------------------------------
+
+model Report {
+  id              String       @id @default(cuid())
+  organizationId  String
+  createdByUserId String?
+  assessmentId    String?
+  status          ReportStatus @default(DRAFT)
+  version         Int          @default(1)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy    User?            @relation(fields: [createdByUserId], references: [id], onDelete: SetNull)
+  assessment   Assessment?      @relation(fields: [assessmentId], references: [id], onDelete: SetNull)
+  snapshots    ReportSnapshot[]
+
+  @@index([organizationId])
+  @@index([assessmentId])
+}
+
+/// Immutable point-in-time report content. Never updated after creation;
+/// a new version is written as a new snapshot row.
+model ReportSnapshot {
+  id             String   @id @default(cuid())
+  reportId       String
+  version        Int      @default(1)
+  /// Fully self-contained rendered content (facts, pathways, sources, review
+  /// dates, assumptions, disclaimers) captured at generation time.
+  content        Json
+  infoCutoffDate DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  report Report @relation(fields: [reportId], references: [id], onDelete: Cascade)
+
+  @@unique([reportId, version])
+  @@index([reportId])
+}
+
+// ---------------------------------------------------------------------------
+// Commerce
+// ---------------------------------------------------------------------------
 
 model ReportRequest {
   id           String        @id @default(cuid())
@@ -224,6 +621,7 @@ model ReportRequest {
 model Payment {
   id                String        @id @default(cuid())
   userId            String
+  organizationId    String
   requestId         String
   providerPaymentId String?
   amount            Int
@@ -235,11 +633,14 @@ model Payment {
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
-  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  request ReportRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
-  events  PaymentEvent[]
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  // Restrict: preserve financial history — an organization with payments cannot be deleted.
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  request      ReportRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  events       PaymentEvent[]
 
   @@index([userId])
+  @@index([organizationId])
   @@index([requestId])
   @@index([status])
   @@index([userId, status])
@@ -247,14 +648,14 @@ model Payment {
 
 /// Immutable payment status transition log
 model PaymentEvent {
-  id        String        @id @default(cuid())
-  paymentId String
+  id         String         @id @default(cuid())
+  paymentId  String
   fromStatus PaymentStatus?
-  toStatus  PaymentStatus
-  source    String
-  actorId   String?
-  metadata  Json?
-  createdAt DateTime      @default(now())
+  toStatus   PaymentStatus
+  source     String
+  actorId    String?
+  metadata   Json?
+  createdAt  DateTime       @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
@@ -262,19 +663,59 @@ model PaymentEvent {
   @@index([createdAt])
 }
 
+model Subscription {
+  id               String             @id @default(cuid())
+  organizationId   String
+  plan             PlanType           @default(FREE)
+  status           SubscriptionStatus @default(ACTIVE)
+  currentPeriodEnd DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+// ---------------------------------------------------------------------------
+// Governance & audit
+// ---------------------------------------------------------------------------
+
+/// Content review workflow history for knowledge entities (pathways, sources).
+/// Referenced polymorphically by (entityType, entityId) so it can cover any
+/// governed entity without a forest of nullable FKs.
+model ContentReviewHistory {
+  id         String         @id @default(cuid())
+  entityType String
+  entityId   String
+  reviewerId String?
+  fromStatus ContentStatus?
+  toStatus   ContentStatus
+  notes      String?        @db.Text
+  createdAt  DateTime       @default(now())
+
+  reviewer User? @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([reviewerId])
+}
+
 model AuditLog {
-  id        String   @id @default(cuid())
-  userId    String?
-  action    String
-  entity    String?
-  entityId  String?
-  metadata  Json?
-  ipAddress String?
-  createdAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  userId         String?
+  organizationId String?
+  action         String
+  entity         String?
+  entityId       String?
+  metadata       Json?
+  ipAddress      String?
+  createdAt      DateTime @default(now())
 
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([userId])
+  @@index([organizationId])
   @@index([action])
   @@index([createdAt])
 }

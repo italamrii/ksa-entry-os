@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth/password";
+import { provisionPersonalOrganization } from "@/lib/organizations";
 import { normalizeEmail, type RegisterInput } from "@/lib/validation/schemas";
 
 export type RegisterResult =
@@ -73,25 +74,46 @@ export async function registerUser(data: RegisterInput): Promise<RegisterResult>
       };
     }
 
-    const user = await prisma.user.create({
-      data: {
-        name: data.name.trim(),
-        email,
-        passwordHash,
-        companyName: data.companyName.trim(),
-        country: data.country.trim(),
-        sectorId,
-        companyType: data.companyType.trim(),
-        entryGoal: data.entryGoal.trim(),
-        role: "USER",
-        onboardingDone: false,
-        locale: "en",
-      },
-      select: {
-        id: true,
-        email: true,
-        role: true,
-      },
+    // Create the user and provision their personal organization (OWNER
+    // membership + company profile) atomically, so no user can exist without
+    // an organization.
+    const user = await prisma.$transaction(async (tx) => {
+      const created = await tx.user.create({
+        data: {
+          name: data.name.trim(),
+          email,
+          passwordHash,
+          companyName: data.companyName.trim(),
+          country: data.country.trim(),
+          sectorId,
+          companyType: data.companyType.trim(),
+          entryGoal: data.entryGoal.trim(),
+          role: "USER",
+          onboardingDone: false,
+          locale: "en",
+        },
+        select: {
+          id: true,
+          email: true,
+          role: true,
+        },
+      });
+
+      await provisionPersonalOrganization(tx, {
+        userId: created.id,
+        name: data.companyName.trim() || data.name.trim(),
+        profile: {
+          companyName: data.companyName.trim(),
+          originCountry: data.country.trim(),
+          companyType: data.companyType.trim(),
+          sectorId,
+          entryGoal: data.entryGoal.trim(),
+          locale: "en",
+          onboardingDone: false,
+        },
+      });
+
+      return created;
     });
 
     console.info("[register] user created", { userId: user.id, email: user.email });

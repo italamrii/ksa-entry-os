@@ -15,7 +15,24 @@ vi.mock("@/lib/auth", () => ({
   },
 }));
 
-vi.mock("@/lib/prisma", () => ({ prisma: { user: { update: vi.fn() } } }));
+// Transaction-aware prisma mock: $transaction runs the callback with a tx client
+// exposing the writes the route performs (user.update + companyProfile.upsert).
+const txUserUpdate = vi.fn();
+const txProfileUpsert = vi.fn();
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    $transaction: vi.fn(async (cb: (tx: unknown) => Promise<unknown>) =>
+      cb({
+        user: { update: (...a: unknown[]) => txUserUpdate(...a) },
+        companyProfile: { upsert: (...a: unknown[]) => txProfileUpsert(...a) },
+      })
+    ),
+  },
+}));
+
+vi.mock("@/lib/organizations", () => ({
+  getOrCreatePrimaryOrganizationId: vi.fn(async () => "org-1"),
+}));
 vi.mock("@/lib/audit", () => ({ createAuditLog: vi.fn() }));
 vi.mock("@/lib/log", () => ({ logServerError: vi.fn() }));
 vi.mock("@/lib/rate-limit", () => ({
@@ -38,7 +55,7 @@ import { logServerError } from "@/lib/log";
 import { rateLimitAsync } from "@/lib/rate-limit";
 
 const mockRequireUser = vi.mocked(requireUser);
-const mockUpdate = vi.mocked(prisma.user.update);
+const mockTransaction = vi.mocked(prisma.$transaction);
 const mockAudit = vi.mocked(createAuditLog);
 const mockLog = vi.mocked(logServerError);
 const mockRateLimit = vi.mocked(rateLimitAsync);
@@ -77,7 +94,14 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockRequireUser.mockResolvedValue(AUTH_USER);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  mockUpdate.mockResolvedValue({} as any);
+  mockTransaction.mockImplementation(async (cb: any) =>
+    cb({
+      user: { update: (...a: unknown[]) => txUserUpdate(...a) },
+      companyProfile: { upsert: (...a: unknown[]) => txProfileUpsert(...a) },
+    })
+  );
+  txUserUpdate.mockResolvedValue({});
+  txProfileUpsert.mockResolvedValue({});
   mockAudit.mockResolvedValue(undefined);
   mockRateLimit.mockResolvedValue({
     success: true,
@@ -88,23 +112,23 @@ beforeEach(() => {
 });
 
 describe("POST /api/onboarding", () => {
-  it("persists the authenticated user's profile with onboardingDone=true and returns 200", async () => {
+  it("persists profile to User mirror + CompanyProfile and returns 200", async () => {
     const res = await POST(makeRequest(VALID));
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ success: true });
 
-    expect(mockUpdate).toHaveBeenCalledTimes(1);
-    const arg = mockUpdate.mock.calls[0][0];
-    // Only the authenticated user's own row may be written.
-    expect(arg.where).toEqual({ id: "user-1" });
-    expect(arg.data).toMatchObject({
-      companyName: "sssss",
-      country: "china",
-      companyType: "foreign",
-      entryGoal: "setup",
-      locale: "en",
-      onboardingDone: true,
-    });
+    // User mirror updated for the authenticated user only, with onboardingDone.
+    expect(txUserUpdate).toHaveBeenCalledTimes(1);
+    const userArg = txUserUpdate.mock.calls[0][0];
+    expect(userArg.where).toEqual({ id: "user-1" });
+    expect(userArg.data).toMatchObject({ onboardingDone: true, companyName: "sssss" });
+
+    // Canonical CompanyProfile upserted for the user's organization.
+    expect(txProfileUpsert).toHaveBeenCalledTimes(1);
+    const profileArg = txProfileUpsert.mock.calls[0][0];
+    expect(profileArg.where).toEqual({ organizationId: "org-1" });
+    expect(profileArg.update).toMatchObject({ onboardingDone: true, originCountry: "china" });
+
     expect(mockAudit).toHaveBeenCalledTimes(1);
   });
 
@@ -114,13 +138,13 @@ describe("POST /api/onboarding", () => {
     );
     const res = await POST(makeRequest(VALID));
     expect(res.status).toBe(401);
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("returns 400 for an invalid payload", async () => {
     const res = await POST(makeRequest({ companyName: "x" }));
     expect(res.status).toBe(400);
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("returns 400 for a malformed JSON body", async () => {
@@ -132,7 +156,7 @@ describe("POST /api/onboarding", () => {
   it("rejects unknown fields (strict schema) with 400", async () => {
     const res = await POST(makeRequest({ ...VALID, evil: "x" }));
     expect(res.status).toBe(400);
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
   it("returns 429 when rate limited", async () => {
@@ -144,16 +168,15 @@ describe("POST /api/onboarding", () => {
     });
     const res = await POST(makeRequest(VALID));
     expect(res.status).toBe(429);
-    expect(mockUpdate).not.toHaveBeenCalled();
+    expect(mockTransaction).not.toHaveBeenCalled();
   });
 
-  it("returns a logged 500 on a genuine persistence failure (no audit, no throw)", async () => {
-    mockUpdate.mockRejectedValue(new Error("db unreachable"));
+  it("returns a logged 500 on a genuine persistence failure (no audit)", async () => {
+    txUserUpdate.mockRejectedValue(new Error("db unreachable"));
     const res = await POST(makeRequest(VALID));
     expect(res.status).toBe(500);
     expect((await res.json()).error).toBe("Request failed");
     expect(mockLog).toHaveBeenCalledWith("onboarding", expect.any(Error));
-    // Secondary work must not run when the write failed.
     expect(mockAudit).not.toHaveBeenCalled();
   });
 

@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { requireUser, authErrorResponse } from "@/lib/auth";
 import { assessmentSchema } from "@/lib/validation/schemas";
 import { evaluateRules } from "@/lib/rules/engine";
 import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { getOrCreatePrimaryOrganizationId } from "@/lib/organizations";
 import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
 
 export const runtime = "nodejs";
@@ -52,10 +54,26 @@ export async function POST(request: NextRequest) {
     });
 
     const hasPaid = await userHasVerifiedPaidAccess(user.id);
+    const organizationId = await getOrCreatePrimaryOrganizationId(user);
+
+    // Persist the raw answers as normalized key/value rows for the domain model.
+    const answerEntries: { key: string; value: Prisma.InputJsonValue }[] = Object.entries({
+      companyOrigin: data.companyOrigin,
+      hasForeignEntity: data.hasForeignEntity,
+      sectorId: data.sectorId ?? null,
+      businessActivity: data.businessActivity ?? null,
+      hiringEmployees: data.hiringEmployees,
+      sellingToGov: data.sellingToGov,
+      needsLocalOffice: data.needsLocalOffice,
+      invoiceCustomers: data.invoiceCustomers,
+      sectorLicensing: data.sectorLicensing,
+      launchTimeline: data.launchTimeline ?? null,
+    }).map(([key, value]) => ({ key, value: value as Prisma.InputJsonValue }));
 
     const assessment = await prisma.assessment.create({
       data: {
         userId: user.id,
+        organizationId,
         companyOrigin: data.companyOrigin,
         hasForeignEntity: data.hasForeignEntity,
         sectorId: data.sectorId || null,
@@ -66,7 +84,14 @@ export async function POST(request: NextRequest) {
         invoiceCustomers: data.invoiceCustomers,
         sectorLicensing: data.sectorLicensing,
         launchTimeline: data.launchTimeline,
+        normalizedFacts: {
+          ...data,
+          sectorSlug,
+          companyType: user.companyType,
+          entryGoal: user.entryGoal,
+        } as Prisma.InputJsonValue,
         isPreview: !hasPaid,
+        answers: { create: answerEntries },
         steps: {
           create: matched.map((req, i) => ({
             requirementId: req.id,
@@ -78,6 +103,7 @@ export async function POST(request: NextRequest) {
 
     await createAuditLog({
       userId: user.id,
+      organizationId,
       action: "assessment.created",
       entity: "Assessment",
       entityId: assessment.id,

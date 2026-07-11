@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { hashPassword } from "../src/lib/auth/password";
+import { provisionPersonalOrganization } from "../src/lib/organizations";
 
 const prisma = new PrismaClient();
 
@@ -353,8 +354,20 @@ async function main() {
     });
   }
 
+  // Canonical entry objectives (mirror of ENTRY_GOALS constants).
+  const entryObjectives = [
+    { slug: "setup", nameEn: "Establish a legal entity", nameAr: "تأسيس كيان قانوني" },
+    { slug: "hire", nameEn: "Hire employees in KSA", nameAr: "توظيف موظفين في السعودية" },
+    { slug: "sell", nameEn: "Sell products/services", nameAr: "بيع منتجات/خدمات" },
+    { slug: "gov", nameEn: "Sell to government", nameAr: "البيع للجهات الحكومية" },
+    { slug: "explore", nameEn: "Explore market entry options", nameAr: "استكشاف خيارات دخول السوق" },
+  ];
+  for (const o of entryObjectives) {
+    await prisma.entryObjective.upsert({ where: { slug: o.slug }, update: o, create: o });
+  }
+
   const passwordHash = await hashPassword(adminPassword);
-  await prisma.user.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: { passwordHash, role: "ADMIN" },
     create: {
@@ -366,6 +379,20 @@ async function main() {
       country: "Saudi Arabia",
       companyType: "local",
       entryGoal: "explore",
+      onboardingDone: true,
+    },
+  });
+
+  // Ensure the admin has a personal organization (OWNER membership + profile).
+  await provisionPersonalOrganization(prisma, {
+    userId: admin.id,
+    name: "KSA Entry OS",
+    profile: {
+      companyName: "KSA Entry OS",
+      originCountry: "Saudi Arabia",
+      companyType: "local",
+      entryGoal: "explore",
+      locale: "en",
       onboardingDone: true,
     },
   });

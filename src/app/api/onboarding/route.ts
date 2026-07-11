@@ -4,6 +4,7 @@ import { requireUser, authErrorResponse } from "@/lib/auth";
 import { onboardingSchema } from "@/lib/validation/schemas";
 import { createAuditLog } from "@/lib/audit";
 import { logServerError } from "@/lib/log";
+import { getOrCreatePrimaryOrganizationId } from "@/lib/organizations";
 import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -33,21 +34,49 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid input" }, { status: 400, headers: noStore });
     }
 
-    // Persist ONLY the authenticated user's own profile. A failure here is a
-    // genuine persistence error -> 500 with a safe log (never leak the cause).
+    // Persist ONLY the authenticated user's own profile. The canonical home is
+    // the organization's CompanyProfile; the User columns are kept as a
+    // compatibility mirror. Both are written in one transaction. A failure here
+    // is a genuine persistence error -> 500 with a safe log (never leak cause).
+    const organizationId = await getOrCreatePrimaryOrganizationId(user);
+    const p = parsed.data;
     try {
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          companyName: parsed.data.companyName,
-          country: parsed.data.country,
-          // Optional: leave an existing sector untouched when omitted.
-          sectorId: parsed.data.sectorId,
-          companyType: parsed.data.companyType,
-          entryGoal: parsed.data.entryGoal,
-          locale: parsed.data.locale,
-          onboardingDone: true,
-        },
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: user.id },
+          data: {
+            companyName: p.companyName,
+            country: p.country,
+            // Optional: leave an existing sector untouched when omitted.
+            sectorId: p.sectorId,
+            companyType: p.companyType,
+            entryGoal: p.entryGoal,
+            locale: p.locale,
+            onboardingDone: true,
+          },
+        });
+        await tx.companyProfile.upsert({
+          where: { organizationId },
+          update: {
+            companyName: p.companyName,
+            originCountry: p.country,
+            sectorId: p.sectorId,
+            companyType: p.companyType,
+            entryGoal: p.entryGoal,
+            locale: p.locale,
+            onboardingDone: true,
+          },
+          create: {
+            organizationId,
+            companyName: p.companyName,
+            originCountry: p.country,
+            sectorId: p.sectorId ?? null,
+            companyType: p.companyType,
+            entryGoal: p.entryGoal,
+            locale: p.locale,
+            onboardingDone: true,
+          },
+        });
       });
     } catch (err) {
       logServerError("onboarding", err);
@@ -59,9 +88,10 @@ export async function POST(request: NextRequest) {
     try {
       await createAuditLog({
         userId: user.id,
+        organizationId,
         action: "onboarding.completed",
-        entity: "User",
-        entityId: user.id,
+        entity: "CompanyProfile",
+        entityId: organizationId,
         ipAddress: ip,
       });
     } catch (err) {

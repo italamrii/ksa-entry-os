@@ -6,6 +6,7 @@ import { generateInvoiceNumber } from "@/lib/utils";
 import { createAuditLog } from "@/lib/audit";
 import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { paymentsFeatureFlags } from "@/lib/payments/flags";
+import { getOrCreatePrimaryOrganizationId } from "@/lib/organizations";
 import { z } from "zod";
 
 export const runtime = "nodejs";
@@ -54,6 +55,7 @@ export async function POST(request: NextRequest) {
     const { plan, assessmentId } = parsed.data;
     // Canonical pricing from server — never trust client amount/currency
     const pricing = PRICING[plan];
+    const organizationId = await getOrCreatePrimaryOrganizationId(user);
 
     if (assessmentId) {
       const assessment = await prisma.assessment.findFirst({
@@ -77,6 +79,7 @@ export async function POST(request: NextRequest) {
     const payment = await prisma.payment.create({
       data: {
         userId: user.id,
+        organizationId,
         requestId: reportRequest.id,
         amount: pricing.price,
         currency: pricing.currency,
@@ -90,6 +93,7 @@ export async function POST(request: NextRequest) {
 
     await createAuditLog({
       userId: user.id,
+      organizationId,
       action: "payment.checkout_created",
       entity: "Payment",
       entityId: payment.id,

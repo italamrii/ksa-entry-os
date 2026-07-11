@@ -73,6 +73,14 @@ async function main() {
   const userA = await prisma.user.findUniqueOrThrow({ where: { email: emailA } });
   const userB = await prisma.user.findUniqueOrThrow({ where: { email: emailB } });
 
+  // Registration now provisions a personal organization for each user.
+  const orgA = (
+    await prisma.organizationMembership.findFirstOrThrow({ where: { userId: userA.id } })
+  ).organizationId;
+  const orgB = (
+    await prisma.organizationMembership.findFirstOrThrow({ where: { userId: userB.id } })
+  ).organizationId;
+
   // Duplicate email
   const dup = await registerUser({
     name: "Dup",
@@ -129,6 +137,7 @@ async function main() {
   const assessmentA = await prisma.assessment.create({
     data: {
       userId: userA.id,
+      organizationId: orgA,
       companyOrigin: "foreign",
       hasForeignEntity: true,
       hiringEmployees: false,
@@ -157,6 +166,7 @@ async function main() {
   const payment = await prisma.payment.create({
     data: {
       userId: userA.id,
+      organizationId: orgA,
       requestId: request.id,
       amount: 499,
       currency: "SAR",
@@ -237,6 +247,8 @@ async function main() {
   await prisma.session.deleteMany({ where: { userId: { in: [userA.id, userB.id] } } });
   await prisma.auditLog.deleteMany({ where: { userId: { in: [userA.id, userB.id] } } });
   await prisma.user.deleteMany({ where: { id: { in: [userA.id, userB.id] } } });
+  // Organizations are not owned by User via FK; remove them (cascades profile/memberships).
+  await prisma.organization.deleteMany({ where: { id: { in: [orgA, orgB] } } });
 
   if (prevDemo === undefined) delete process.env.ALLOW_DEMO_PAYMENTS;
   else process.env.ALLOW_DEMO_PAYMENTS = prevDemo;
