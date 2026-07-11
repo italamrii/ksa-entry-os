@@ -77,14 +77,15 @@ model User {
 model Session {
   id        String   @id @default(cuid())
   userId    String
-  token     String   @unique
+  /// SHA-256 hex digest of the raw session token (raw token never stored)
+  tokenHash String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
+  @@index([tokenHash])
 }
 
 model Sector {
@@ -221,23 +222,44 @@ model ReportRequest {
 }
 
 model Payment {
-  id              String        @id @default(cuid())
-  userId          String
-  requestId       String
+  id                String        @id @default(cuid())
+  userId            String
+  requestId         String
   providerPaymentId String?
-  amount          Int
-  currency        String        @default("SAR")
-  status          PaymentStatus @default(PENDING)
-  invoiceNumber   String        @unique
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+  amount            Int
+  currency          String        @default("SAR")
+  status            PaymentStatus @default(PENDING)
+  invoiceNumber     String        @unique
+  /// Provider event id for webhook idempotency (unique when set)
+  idempotencyKey    String?       @unique
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
-  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-  request ReportRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  user    User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request ReportRequest  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  events  PaymentEvent[]
 
   @@index([userId])
   @@index([requestId])
   @@index([status])
+  @@index([userId, status])
+}
+
+/// Immutable payment status transition log
+model PaymentEvent {
+  id        String        @id @default(cuid())
+  paymentId String
+  fromStatus PaymentStatus?
+  toStatus  PaymentStatus
+  source    String
+  actorId   String?
+  metadata  Json?
+  createdAt DateTime      @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([createdAt])
 }
 
 model AuditLog {

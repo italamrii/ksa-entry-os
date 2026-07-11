@@ -1,47 +1,80 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionTokenEdge } from "@/lib/auth/jwt";
 
-const securityHeaders = {
+const securityHeaders: Record<string, string> = {
   "X-Frame-Options": "DENY",
   "X-Content-Type-Options": "nosniff",
   "Referrer-Policy": "strict-origin-when-cross-origin",
-  "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+  "Permissions-Policy":
+    "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+  // Next.js requires 'unsafe-inline' for some runtime bootstrap; documented residual risk.
   "Content-Security-Policy":
-    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none';",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
 };
 
-export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
-  const isProduction = process.env.NODE_ENV === "production";
+const protectedPaths = [
+  "/dashboard",
+  "/assessment",
+  "/requests",
+  "/reports",
+  "/payments",
+  "/settings",
+  "/onboarding",
+  "/admin",
+];
+const adminPaths = ["/admin"];
+const authPaths = ["/login", "/register"];
 
+function applySecurityHeaders(response: NextResponse, isProduction: boolean) {
   for (const [key, value] of Object.entries(securityHeaders)) {
     response.headers.set(key, value);
   }
-
   if (isProduction) {
-    response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload"
+    );
   }
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+}
 
+export async function middleware(request: NextRequest) {
+  const isProduction = process.env.NODE_ENV === "production";
   const { pathname } = request.nextUrl;
-  const session = request.cookies.get("ksa_session")?.value;
+  const rawCookie = request.cookies.get(SESSION_COOKIE)?.value;
+  const secret = process.env.AUTH_SECRET;
 
-  const protectedPaths = ["/dashboard", "/assessment", "/requests", "/payments", "/settings", "/onboarding"];
-  const adminPaths = ["/admin"];
-  const authPaths = ["/login", "/register"];
+  let session: Awaited<ReturnType<typeof verifySessionTokenEdge>> = null;
+  if (rawCookie && secret && secret.length >= 32) {
+    session = await verifySessionTokenEdge(rawCookie, secret);
+  }
 
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   const isAdmin = adminPaths.some((p) => pathname.startsWith(p));
   const isAuth = authPaths.some((p) => pathname.startsWith(p));
 
   if ((isProtected || isAdmin) && !session) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    const loginUrl = new URL("/login", request.url);
+    loginUrl.searchParams.set("next", pathname);
+    const redirect = NextResponse.redirect(loginUrl);
+    return applySecurityHeaders(redirect, isProduction);
+  }
+
+  if (isAdmin && session?.role !== "ADMIN") {
+    const denied = NextResponse.redirect(new URL("/dashboard", request.url));
+    return applySecurityHeaders(denied, isProduction);
   }
 
   if (isAuth && session) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
+    const dest = session.role === "ADMIN" ? "/admin" : "/dashboard";
+    const redirect = NextResponse.redirect(new URL(dest, request.url));
+    return applySecurityHeaders(redirect, isProduction);
   }
 
-  return response;
+  const response = NextResponse.next();
+  return applySecurityHeaders(response, isProduction);
 }
 
 export const config = {

@@ -1,36 +1,69 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { requireUser, authErrorResponse } from "@/lib/auth";
 import { PRICING } from "@/lib/constants";
 import { generateInvoiceNumber } from "@/lib/utils";
 import { createAuditLog } from "@/lib/audit";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
+import { paymentsFeatureFlags } from "@/lib/payments/flags";
 import { z } from "zod";
 
-const checkoutSchema = z.object({
-  plan: z.enum(["PROFESSIONAL", "BUSINESS"]),
-  assessmentId: z.string().optional(),
-});
+export const runtime = "nodejs";
+
+const checkoutSchema = z
+  .object({
+    plan: z.enum(["PROFESSIONAL", "BUSINESS"]),
+    assessmentId: z.string().cuid().optional(),
+  })
+  .strict();
+
+const noStore = { "Cache-Control": "no-store" };
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const ip = getClientIp(request);
-  const limit = rateLimit(`checkout:${user.id}`, 5, 60 * 60 * 1000);
-  if (!limit.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
   try {
-    const body = await request.json();
+    const user = await requireUser();
+    const ip = getClientIp(request);
+    const limit = await rateLimitAsync(`checkout:${user.id}`, 5, 60 * 60 * 1000);
+    if (!limit.success) {
+      return rateLimitResponse(limit);
+    }
+
+    const flags = paymentsFeatureFlags();
+    if (!flags.paymentsEnabled) {
+      return NextResponse.json(
+        {
+          error: "Payments not yet enabled",
+          code: "PAYMENTS_DISABLED",
+        },
+        { status: 503, headers: noStore }
+      );
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: noStore });
+    }
+
     const parsed = checkoutSchema.safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid input" }, { status: 400, headers: noStore });
     }
 
     const { plan, assessmentId } = parsed.data;
+    // Canonical pricing from server — never trust client amount/currency
     const pricing = PRICING[plan];
+
+    if (assessmentId) {
+      const assessment = await prisma.assessment.findFirst({
+        where: { id: assessmentId, userId: user.id },
+        select: { id: true },
+      });
+      if (!assessment) {
+        return NextResponse.json({ error: "Not found" }, { status: 404, headers: noStore });
+      }
+    }
 
     const reportRequest = await prisma.reportRequest.create({
       data: {
@@ -49,7 +82,9 @@ export async function POST(request: NextRequest) {
         currency: pricing.currency,
         status: "PENDING",
         invoiceNumber: generateInvoiceNumber(),
-        providerPaymentId: `demo_${crypto.randomUUID()}`,
+        providerPaymentId: flags.providerConfigured
+          ? null
+          : `pending_${crypto.randomUUID()}`,
       },
     });
 
@@ -58,75 +93,32 @@ export async function POST(request: NextRequest) {
       action: "payment.checkout_created",
       entity: "Payment",
       entityId: payment.id,
-      metadata: { plan, amount: pricing.price },
+      metadata: { plan, amount: pricing.price, currency: pricing.currency },
       ipAddress: ip,
     });
 
-    return NextResponse.json({
-      paymentId: payment.id,
-      invoiceNumber: payment.invoiceNumber,
-      amount: payment.amount,
-      currency: payment.currency,
-      checkoutUrl: `/payments/${payment.id}`,
-    });
-  } catch {
-    return NextResponse.json({ error: "Checkout failed" }, { status: 500 });
+    return NextResponse.json(
+      {
+        paymentId: payment.id,
+        invoiceNumber: payment.invoiceNumber,
+        amount: payment.amount,
+        currency: payment.currency,
+        checkoutUrl: `/payments/${payment.id}`,
+        paymentsEnabled: flags.paymentsEnabled,
+        providerConfigured: flags.providerConfigured,
+        allowDemoPayments: flags.allowDemoPayments,
+      },
+      { headers: noStore }
+    );
+  } catch (err) {
+    return authErrorResponse(err);
   }
 }
 
-export async function PATCH(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const ip = getClientIp(request);
-  const limit = rateLimit(`payment-callback:${ip}`, 20, 60 * 1000);
-  if (!limit.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
-  }
-
-  try {
-    const { paymentId, status } = await request.json();
-    if (!paymentId || !["PAID", "FAILED"].includes(status)) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
-    }
-
-    const payment = await prisma.payment.findFirst({
-      where: { id: paymentId, userId: user.id },
-      include: { request: true },
-    });
-
-    if (!payment) return NextResponse.json({ error: "Not found" }, { status: 404 });
-
-    await prisma.payment.update({
-      where: { id: paymentId },
-      data: { status },
-    });
-
-    if (status === "PAID") {
-      await prisma.reportRequest.update({
-        where: { id: payment.requestId },
-        data: { status: "IN_REVIEW" },
-      });
-
-      if (payment.request.assessmentId) {
-        await prisma.assessment.update({
-          where: { id: payment.request.assessmentId },
-          data: { isPreview: false },
-        });
-      }
-    }
-
-    await createAuditLog({
-      userId: user.id,
-      action: "payment.status_changed",
-      entity: "Payment",
-      entityId: paymentId,
-      metadata: { status },
-      ipAddress: ip,
-    });
-
-    return NextResponse.json({ success: true });
-  } catch {
-    return NextResponse.json({ error: "Update failed" }, { status: 500 });
-  }
+/** User-callable payment status mutation is intentionally removed. */
+export async function PATCH() {
+  return NextResponse.json(
+    { error: "Method not allowed" },
+    { status: 405, headers: { ...noStore, Allow: "POST" } }
+  );
 }

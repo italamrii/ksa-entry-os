@@ -7,6 +7,14 @@ async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@ksaentryos.com";
   const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? "ChangeMe123!Secure";
 
+  if (process.env.NODE_ENV === "production") {
+    if (!process.env.SEED_ADMIN_PASSWORD || adminPassword === "ChangeMe123!Secure") {
+      throw new Error(
+        "Refusing to seed production with default SEED_ADMIN_PASSWORD. Set a strong password."
+      );
+    }
+  }
+
   const sectors = [
     { slug: "technology-saas", nameEn: "Technology / SaaS", nameAr: "التقنية / SaaS" },
     { slug: "consulting", nameEn: "Consulting", nameAr: "الاستشارات" },
@@ -363,7 +371,9 @@ async function main() {
   });
 
   console.log("Seed completed successfully");
-  console.log(`Admin: ${adminEmail}`);
+  if (process.env.NODE_ENV !== "production") {
+    console.log(`Admin email configured: ${adminEmail}`);
+  }
 }
 
 main()

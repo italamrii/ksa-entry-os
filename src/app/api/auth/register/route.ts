@@ -2,30 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { setSessionCookie, createUserSession } from "@/lib/auth";
 import { registerUser } from "@/lib/auth/register-user";
 import { normalizeEmail, registerSchema } from "@/lib/validation/schemas";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
 
 export const runtime = "nodejs";
 
+const noStore = { "Cache-Control": "no-store" };
+
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request);
-  const limit = rateLimit(`register:${ip}`, 5, 60 * 60 * 1000);
+  const limit = await rateLimitAsync(`register:${ip}`, 5, 60 * 60 * 1000);
   if (!limit.success) {
-    return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    return rateLimitResponse(limit);
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: noStore });
   }
 
-  const parsed = registerSchema.safeParse(body);
+  const parsed = registerSchema.strict().safeParse(body);
   if (!parsed.success) {
     return NextResponse.json(
       { error: "Invalid input", details: parsed.error.flatten() },
-      { status: 400 }
+      { status: 400, headers: noStore }
     );
   }
 
@@ -37,10 +39,9 @@ export async function POST(request: NextRequest) {
   if (!result.ok) {
     const status =
       result.code === "DUPLICATE_EMAIL" || result.code === "INVALID_SECTOR" ? 400 : 503;
-    return NextResponse.json({ error: result.message }, { status });
+    return NextResponse.json({ error: result.message }, { status, headers: noStore });
   }
 
-  // User is already persisted. Session failure must not undo registration.
   try {
     const token = await createUserSession(result.userId, result.email, result.role);
     await setSessionCookie(token);
@@ -67,8 +68,11 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  return NextResponse.json({
-    success: true,
-    userId: result.userId,
-  });
+  return NextResponse.json(
+    {
+      success: true,
+      userId: result.userId,
+    },
+    { headers: noStore }
+  );
 }

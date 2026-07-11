@@ -14,6 +14,9 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "test:register": "tsx scripts/test-registration.ts",
+    "test:security": "tsx scripts/test-security.ts",
+    "test:unit": "vitest run",
+    "test": "vitest run && tsx scripts/test-security.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {
@@ -35,6 +38,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "jose": "^6.2.3",
+    "ioredis": "^5.8.2",
     "lucide-react": "^1.22.0",
     "next": "16.2.9",
     "next-themes": "^0.4.6",
@@ -56,6 +60,7 @@
     "prisma": "^6.19.0",
     "tailwindcss": "^4",
     "tsx": "^4.22.4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.4"
   }
 }

@@ -1,26 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getCurrentUser } from "@/lib/auth";
+import { requireUser, authErrorResponse } from "@/lib/auth";
 import { assessmentSchema } from "@/lib/validation/schemas";
 import { evaluateRules } from "@/lib/rules/engine";
-import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
+
+export const runtime = "nodejs";
+
+const noStore = { "Cache-Control": "no-store" };
 
 export async function POST(request: NextRequest) {
-  const user = await getCurrentUser();
-  if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const ip = getClientIp(request);
-  const limit = rateLimit(`assessment:${user.id}`, 10, 60 * 60 * 1000);
-  if (!limit.success) {
-    return NextResponse.json({ error: "Too many assessments. Please try again later." }, { status: 429 });
-  }
-
   try {
-    const body = await request.json();
-    const parsed = assessmentSchema.safeParse(body);
+    const user = await requireUser();
+    const ip = getClientIp(request);
+    const limit = await rateLimitAsync(`assessment:${user.id}`, 10, 60 * 60 * 1000);
+    if (!limit.success) {
+      return rateLimitResponse(limit, "Too many assessments. Please try again later.");
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid request body" }, { status: 400, headers: noStore });
+    }
+
+    const parsed = assessmentSchema.strict().safeParse(body);
     if (!parsed.success) {
-      return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+      return NextResponse.json({ error: "Invalid input" }, { status: 400, headers: noStore });
     }
 
     const data = parsed.data;
@@ -42,9 +51,7 @@ export async function POST(request: NextRequest) {
       entryGoal: user.entryGoal,
     });
 
-    const hasPaid = await prisma.payment.findFirst({
-      where: { userId: user.id, status: "PAID" },
-    });
+    const hasPaid = await userHasVerifiedPaidAccess(user.id);
 
     const assessment = await prisma.assessment.create({
       data: {
@@ -77,8 +84,11 @@ export async function POST(request: NextRequest) {
       ipAddress: ip,
     });
 
-    return NextResponse.json({ assessmentId: assessment.id, stepCount: matched.length });
-  } catch {
-    return NextResponse.json({ error: "Failed to create assessment" }, { status: 500 });
+    return NextResponse.json(
+      { assessmentId: assessment.id, stepCount: matched.length },
+      { headers: noStore }
+    );
+  } catch (err) {
+    return authErrorResponse(err);
   }
 }

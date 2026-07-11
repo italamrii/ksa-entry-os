@@ -6,6 +6,7 @@ import { DashboardShell } from "@/components/layout/dashboard-nav";
 import { EntryReportCard, EntryReportsEmpty } from "@/components/requests/entry-report-card";
 import { getRequests } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n";
+import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
 
 export default async function RequestsPage() {
   const user = await getCurrentUser();
@@ -27,9 +28,7 @@ export default async function RequestsPage() {
     ? await prisma.sector.findUnique({ where: { id: user.sectorId } })
     : null;
 
-  const hasPaid = await prisma.payment.findFirst({
-    where: { userId: user.id, status: "PAID" },
-  });
+  const hasPaid = await userHasVerifiedPaidAccess(user.id);
 
   return (
     <div className="flex min-h-screen flex-col">

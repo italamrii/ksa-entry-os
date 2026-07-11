@@ -11,6 +11,7 @@ import { DISCLAIMER_EN, DISCLAIMER_AR } from "@/lib/constants";
 import { Download, CreditCard, Lock } from "lucide-react";
 import { getAssessment } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n";
+import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
 
 export default async function AssessmentResultPage({
   params,
@@ -36,10 +37,7 @@ export default async function AssessmentResultPage({
 
   if (!assessment) redirect("/dashboard");
 
-  const hasPaid = await prisma.payment.findFirst({
-    where: { userId: user.id, status: "PAID" },
-  });
-
+  const hasPaid = await userHasVerifiedPaidAccess(user.id, { assessmentId: id });
   const previewLimit = getPreviewLimit(!!hasPaid);
   const steps = assessment.steps.map((s) => s.requirement);
 

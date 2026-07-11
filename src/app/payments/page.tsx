@@ -16,18 +16,28 @@ function CheckoutContent() {
   const planParam = searchParams.get("plan") as "PROFESSIONAL" | "BUSINESS" | null;
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<"PROFESSIONAL" | "BUSINESS">(planParam ?? "PROFESSIONAL");
+  const [disabledMsg, setDisabledMsg] = useState<string | null>(null);
 
   const pricing = PRICING[plan];
 
   async function checkout() {
     setLoading(true);
+    setDisabledMsg(null);
     try {
       const res = await fetch("/api/payments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plan, assessmentId }),
+        body: JSON.stringify({
+          plan,
+          ...(assessmentId ? { assessmentId } : {}),
+        }),
       });
       const json = await res.json();
+      if (res.status === 503 || json.code === "PAYMENTS_DISABLED") {
+        setDisabledMsg("Payments not yet enabled. No charge was made.");
+        toast.error("Payments not yet enabled");
+        return;
+      }
       if (!res.ok) {
         toast.error(json.error ?? "Checkout failed");
         return;
@@ -47,7 +57,7 @@ function CheckoutContent() {
           <CreditCard className="h-5 w-5 text-emerald-400" />
           Checkout
         </CardTitle>
-        <CardDescription>Select a plan and complete payment</CardDescription>
+        <CardDescription>Select a plan. Amount and currency are set by the server.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
@@ -61,17 +71,25 @@ function CheckoutContent() {
               }`}
             >
               <p className="font-medium text-white">{PRICING[p].name}</p>
-              <p className="text-emerald-400">{PRICING[p].price} {PRICING[p].currency}</p>
+              <p className="text-emerald-400">
+                {PRICING[p].price} {PRICING[p].currency}
+              </p>
             </button>
           ))}
         </div>
         <DisclaimerBanner />
         <p className="text-xs text-slate-500">{DISCLAIMER_EN}</p>
+        {disabledMsg && (
+          <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-100">
+            {disabledMsg}
+          </p>
+        )}
         <Button className="w-full" onClick={checkout} disabled={loading}>
-          {loading ? "Processing..." : `Pay ${pricing.price} ${pricing.currency}`}
+          {loading ? "Processing..." : `Continue · ${pricing.price} ${pricing.currency}`}
         </Button>
         <p className="text-center text-xs text-slate-500">
-          Demo mode — no real card data is collected or stored.
+          Payment completion requires a verified provider webhook or an authorized admin action.
+          No card data is collected on this page.
         </p>
       </CardContent>
     </Card>

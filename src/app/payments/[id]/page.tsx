@@ -8,33 +8,67 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import Link from "next/link";
+
+type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
+
+interface PaymentView {
+  id: string;
+  amount: number;
+  currency: string;
+  status: PaymentStatus;
+  invoiceNumber: string;
+  allowDemoPayments: boolean;
+  providerConfigured: boolean;
+  paymentsEnabled: boolean;
+}
 
 export default function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
-  const [paymentId, setPaymentId] = useState<string>("");
-  const [status, setStatus] = useState<"PENDING" | "PAID" | "FAILED">("PENDING");
+  const [payment, setPayment] = useState<PaymentView | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    params.then((p) => setPaymentId(p.id));
+    let cancelled = false;
+    params.then(async (p) => {
+      try {
+        const res = await fetch(`/api/payments/${p.id}`, { cache: "no-store" });
+        if (!res.ok) {
+          if (!cancelled) setLoadError(true);
+          return;
+        }
+        const json = (await res.json()) as PaymentView;
+        if (!cancelled) setPayment(json);
+      } catch {
+        if (!cancelled) setLoadError(true);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params]);
 
-  async function simulatePayment(paid: boolean) {
-    if (!paymentId) return;
+  async function simulatePayment(success: boolean) {
+    if (!payment?.allowDemoPayments) return;
     setLoading(true);
     try {
-      const res = await fetch("/api/payments", {
-        method: "PATCH",
+      const res = await fetch("/api/payments/demo", {
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paymentId, status: paid ? "PAID" : "FAILED" }),
+        body: JSON.stringify({
+          paymentId: payment.id,
+          outcome: success ? "success" : "failure",
+        }),
       });
       if (!res.ok) {
-        toast.error("Payment update failed");
+        toast.error("Demo payment rejected");
         return;
       }
-      setStatus(paid ? "PAID" : "FAILED");
-      toast.success(paid ? "Payment successful!" : "Payment failed");
-      if (paid) setTimeout(() => router.push("/dashboard"), 2000);
+      const json = (await res.json()) as { status: PaymentStatus };
+      setPayment((prev) => (prev ? { ...prev, status: json.status } : prev));
+      toast.success(success ? "Demo payment marked paid (dev only)" : "Demo payment marked failed");
+      if (success) setTimeout(() => router.push("/dashboard"), 1500);
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -49,31 +83,78 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Payment Status</CardTitle>
-            <CardDescription>{paymentId ? `Payment: ${paymentId.slice(0, 8)}...` : "Loading..."}</CardDescription>
+            <CardDescription>
+              {payment
+                ? `${payment.invoiceNumber} · ${payment.amount} ${payment.currency}`
+                : loadError
+                  ? "Unable to load payment"
+                  : "Loading..."}
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-center">
-              <Badge variant={status === "PAID" ? "success" : status === "FAILED" ? "danger" : "warning"}>
-                {status}
-              </Badge>
-            </div>
-            {status === "PENDING" && (
-              <>
-                <p className="text-center text-sm text-slate-400">
-                  Demo payment — no card data collected. Click to simulate.
+            {payment && (
+              <div className="flex items-center justify-center">
+                <Badge
+                  variant={
+                    payment.status === "PAID"
+                      ? "success"
+                      : payment.status === "FAILED"
+                        ? "danger"
+                        : "warning"
+                  }
+                >
+                  {payment.status}
+                </Badge>
+              </div>
+            )}
+
+            {payment?.status === "PENDING" && !payment.providerConfigured && !payment.allowDemoPayments && (
+              <div className="space-y-3 text-center">
+                <p className="text-sm text-slate-300">Payments not yet enabled</p>
+                <p className="text-xs text-slate-500">
+                  Card checkout is not configured. No payment was processed. Contact support or try again
+                  when online payments are available.
                 </p>
-                <Button className="w-full" onClick={() => simulatePayment(true)} disabled={loading || !paymentId}>
-                  {loading ? "Processing..." : "Simulate successful payment"}
+                <Button asChild variant="outline" className="w-full">
+                  <Link href="/dashboard">Return to dashboard</Link>
                 </Button>
-                <Button variant="outline" className="w-full" onClick={() => simulatePayment(false)} disabled={loading || !paymentId}>
-                  Simulate failed payment
+              </div>
+            )}
+
+            {payment?.status === "PENDING" && payment.allowDemoPayments && (
+              <>
+                <p className="text-center text-sm text-amber-200/90">
+                  Development demo only — not a real payment. Disabled in production.
+                </p>
+                <Button
+                  className="w-full"
+                  onClick={() => simulatePayment(true)}
+                  disabled={loading}
+                >
+                  {loading ? "Processing..." : "Simulate successful payment (dev)"}
+                </Button>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => simulatePayment(false)}
+                  disabled={loading}
+                >
+                  Simulate failed payment (dev)
                 </Button>
               </>
             )}
-            {status === "PAID" && (
+
+            {payment?.status === "PENDING" && payment.providerConfigured && (
+              <p className="text-center text-sm text-slate-400">
+                Complete checkout with the payment provider. Status updates after verified webhook
+                confirmation.
+              </p>
+            )}
+
+            {payment?.status === "PAID" && (
               <div className="text-center">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
-                <p className="mt-2 text-white">Payment confirmed!</p>
+                <p className="mt-2 text-white">Payment confirmed</p>
               </div>
             )}
             <DisclaimerBanner />
