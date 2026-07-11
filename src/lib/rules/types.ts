@@ -5,9 +5,13 @@ export interface EngineSource {
   title: string;
   url: string;
   status: string;
+  classification: string;
+  version: number;
   authority: string | null;
   lastVerified: string | null;
   nextReview: string | null;
+  /** Whether the source was stale at evaluation time (included sources: false). */
+  stale: boolean;
 }
 
 export interface AssumptionTemplate {
@@ -140,6 +144,7 @@ export interface EvaluationOutput {
   factsVersion: number;
   knowledgeVersion: number;
   rulesetSignature: string;
+  governanceSignature: string;
   inputHash: string;
   facts: FactSet;
   recommendations: RecommendationOut[];

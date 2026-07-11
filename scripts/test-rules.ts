@@ -96,8 +96,11 @@ async function main() {
   ok("input change regenerates; historical result remains immutable");
 
   // --- Rule version change creates a new result ---
+  // Under Stage 4.5 governance, a participating rule must be backed by a
+  // published, fresh, source-backed pathway — attach an existing seeded one.
+  const governedPathway = await prisma.pathway.findFirstOrThrow({ where: { status: "PUBLISHED", sources: { some: { source: { status: "PUBLISHED" } } } } });
   const extra = await prisma.rule.create({
-    data: { ruleKey: `test_extra_${stamp}`, version: 1, titleEn: "Extra", titleAr: "إضافي", explanationEn: "e", explanationAr: "ش", status: "PUBLISHED", priority: 1, conditions: { op: "all", conditions: [] }, effectiveDate: new Date(), requiresVerification: true },
+    data: { ruleKey: `test_extra_${stamp}`, version: 1, titleEn: "Extra", titleAr: "إضافي", explanationEn: "e", explanationAr: "ش", status: "PUBLISHED", priority: 1, conditions: { op: "all", conditions: [] }, effectiveDate: new Date(), requiresVerification: true, pathwayId: governedPathway.id },
   });
   const fourth = await evaluateAssessment(userA, assessment.id);
   if (fourth.reused) fail("new published rule should change the ruleset signature");

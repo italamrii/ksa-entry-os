@@ -93,6 +93,66 @@ enum PlanType {
   BUSINESS
 }
 
+/// Source quality classification. Only official/regulator/portal classes may
+/// directly support production regulatory claims.
+enum SourceClassification {
+  OFFICIAL_PRIMARY
+  OFFICIAL_SECONDARY
+  REGULATOR_GUIDANCE
+  GOVERNMENT_PORTAL
+  PROFESSIONAL_REFERENCE
+  INTERNAL_INTERPRETATION
+}
+
+enum SourceAvailability {
+  AVAILABLE
+  UNREACHABLE
+  UNKNOWN
+}
+
+/// Content-governance capacities. Explicit and separate from org roles.
+enum GovernanceRole {
+  AUTHOR
+  REVIEWER
+  LEGAL_REVIEWER
+  PUBLISHER
+  ADMIN
+}
+
+enum AlertType {
+  SOURCE_REVIEW_DUE
+  SOURCE_OVERDUE
+  SOURCE_UNREACHABLE
+  SOURCE_FINGERPRINT_CHANGED
+  PUBLISHED_MISSING_METADATA
+  RULE_LINKED_STALE_SOURCE
+  PATHWAY_LINKED_RETIRED_DEPENDENCY
+  UNRESOLVED_REVIEW
+  REJECTED_PUBLICATION
+  EXPIRED_EFFECTIVE_DATE
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum AlertStatus {
+  OPEN
+  RESOLVED
+}
+
+enum DisclaimerContext {
+  PLATFORM
+  EVALUATION
+  REPORT
+  EXTERNAL_LINK
+  PROFESSIONAL_REVIEW
+  OFFICIAL_VERIFICATION
+  OUTDATED_INFO
+}
+
 // ---------------------------------------------------------------------------
 // Identity & tenancy
 // ---------------------------------------------------------------------------
@@ -280,21 +340,35 @@ model Authority {
 
 /// First-class official source record with review/verification metadata.
 model OfficialSource {
-  id            String        @id @default(cuid())
-  authorityId   String?
-  title         String
-  url           String
-  language      String        @default("en")
-  jurisdiction  String        @default("SA")
-  status        ContentStatus @default(DRAFT)
-  effectiveDate DateTime?
-  lastVerified  DateTime?
-  nextReview    DateTime?
-  version       Int           @default(1)
-  reviewerId    String?
-  deletedAt     DateTime?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  id                  String               @id @default(cuid())
+  authorityId         String?
+  title               String
+  url                 String
+  domain              String?
+  language            String               @default("en")
+  jurisdiction        String               @default("SA")
+  classification      SourceClassification @default(INTERNAL_INTERPRETATION)
+  availability        SourceAvailability   @default(UNKNOWN)
+  status              ContentStatus        @default(DRAFT)
+  effectiveDate       DateTime?
+  lastVerified        DateTime?
+  nextReview          DateTime?
+  fingerprint         String?
+  reviewNotes         String?              @db.Text
+  limitationsEn       String?              @db.Text
+  limitationsAr       String?              @db.Text
+  translationComplete Boolean              @default(false)
+  version             Int                  @default(1)
+  reviewerId          String?
+  reviewerRole        GovernanceRole?
+  authorId            String?
+  changeReason        String?
+  // Soft references (ids, no FK) to preserve immutable version history.
+  previousVersionId   String?
+  supersededById      String?
+  deletedAt           DateTime?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
   authority      Authority?      @relation(fields: [authorityId], references: [id])
   pathwaySources PathwaySource[]
@@ -302,6 +376,7 @@ model OfficialSource {
   @@index([authorityId])
   @@index([status])
   @@index([nextReview])
+  @@index([classification])
 }
 
 /// Legacy simple link list retained for compatibility with existing admin UI.
@@ -327,29 +402,34 @@ model OfficialLink {
 // ---------------------------------------------------------------------------
 
 model Pathway {
-  id                         String        @id @default(cuid())
-  slug                       String        @unique
+  id                         String          @id @default(cuid())
+  slug                       String          @unique
   titleEn                    String
   titleAr                    String
-  descriptionEn              String        @db.Text
-  descriptionAr              String        @db.Text
-  status                     ContentStatus @default(DRAFT)
-  version                    Int           @default(1)
+  descriptionEn              String          @db.Text
+  descriptionAr              String          @db.Text
+  status                     ContentStatus   @default(DRAFT)
+  version                    Int             @default(1)
   /// Structured applicability conditions evaluated by the rules engine (Stage 4).
   applicability              Json?
-  complexity                 Complexity    @default(MEDIUM)
-  riskLevel                  RiskLevel     @default(MEDIUM)
+  complexity                 Complexity      @default(MEDIUM)
+  riskLevel                  RiskLevel       @default(MEDIUM)
   sectorId                   String?
   activityId                 String?
-  requiresProfessionalReview Boolean       @default(false)
-  requiresVerification       Boolean       @default(true)
+  requiresProfessionalReview Boolean         @default(false)
+  requiresVerification       Boolean         @default(true)
   effectiveDate              DateTime?
   lastReviewed               DateTime?
   nextReview                 DateTime?
   reviewerId                 String?
+  reviewerRole               GovernanceRole?
+  authorId                   String?
+  changeReason               String?
+  previousVersionId          String?
+  supersededById             String?
   deletedAt                  DateTime?
-  createdAt                  DateTime      @default(now())
-  updatedAt                  DateTime      @updatedAt
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
 
   sector          Sector?             @relation(fields: [sectorId], references: [id])
   activity        Activity?           @relation(fields: [activityId], references: [id])
@@ -599,6 +679,11 @@ model Rule {
   requiresProfessionalReview Boolean         @default(false)
   requiresVerification       Boolean         @default(true)
   reviewerId                 String?
+  reviewerRole               GovernanceRole?
+  authorId                   String?
+  changeReason               String?
+  previousVersionId          String?
+  supersededById             String?
   limitationsEn              String?         @db.Text
   limitationsAr              String?         @db.Text
   deletedAt                  DateTime?
@@ -615,23 +700,25 @@ model Rule {
 /// Immutable snapshot of one deterministic evaluation of an assessment.
 /// Regeneration only happens when facts or the ruleset signature change.
 model EvaluationResult {
-  id               String   @id @default(cuid())
-  organizationId   String
-  assessmentId     String
-  engineVersion    String
-  factsVersion     Int
-  knowledgeVersion Int      @default(1)
+  id                  String   @id @default(cuid())
+  organizationId      String
+  assessmentId        String
+  engineVersion       String
+  factsVersion        Int
+  knowledgeVersion    Int      @default(1)
   /// Signature of the participating rule (ruleKey:version) set — changes when a
   /// rule is published/updated/retired.
-  rulesetSignature String
-  /// sha256 of normalized facts + rulesetSignature; identical hash => reuse.
-  inputHash        String
-  factsSnapshot    Json
-  sourcesSnapshot  Json
-  risks            Json
-  assumptions      Json
-  summary          Json
-  createdAt        DateTime @default(now())
+  rulesetSignature    String
+  /// Signature of governed source freshness/version state at evaluation time.
+  governanceSignature String   @default("")
+  /// sha256 of normalized facts + rulesetSignature + governanceSignature.
+  inputHash           String
+  factsSnapshot       Json
+  sourcesSnapshot     Json
+  risks               Json
+  assumptions         Json
+  summary             Json
+  createdAt           DateTime @default(now())
 
   organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   assessment      Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
@@ -792,19 +879,59 @@ model Subscription {
 /// Referenced polymorphically by (entityType, entityId) so it can cover any
 /// governed entity without a forest of nullable FKs.
 model ContentReviewHistory {
-  id         String         @id @default(cuid())
-  entityType String
-  entityId   String
-  reviewerId String?
-  fromStatus ContentStatus?
-  toStatus   ContentStatus
-  notes      String?        @db.Text
-  createdAt  DateTime       @default(now())
+  id            String          @id @default(cuid())
+  entityType    String
+  entityId      String
+  entityVersion Int?
+  reviewerId    String?
+  reviewerRole  GovernanceRole?
+  fromStatus    ContentStatus?
+  toStatus      ContentStatus
+  changeReason  String?
+  notes         String?         @db.Text
+  createdAt     DateTime        @default(now())
 
   reviewer User? @relation(fields: [reviewerId], references: [id], onDelete: SetNull)
 
   @@index([entityType, entityId])
   @@index([reviewerId])
+}
+
+/// Operational governance alert for the (future) admin dashboard.
+model ContentAlert {
+  id         String        @id @default(cuid())
+  type       AlertType
+  severity   AlertSeverity @default(MEDIUM)
+  status     AlertStatus   @default(OPEN)
+  entityType String
+  entityId   String
+  messageEn  String
+  messageAr  String
+  metadata   Json?
+  resolvedAt DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([type, entityType, entityId, status])
+  @@index([status])
+  @@index([type])
+  @@index([entityType, entityId])
+}
+
+/// Centralized, versioned legal/safety copy. Only PUBLISHED rows are served.
+model Disclaimer {
+  id            String            @id @default(cuid())
+  context       DisclaimerContext
+  version       Int               @default(1)
+  textEn        String            @db.Text
+  textAr        String            @db.Text
+  status        ContentStatus     @default(PUBLISHED)
+  effectiveDate DateTime          @default(now())
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  @@unique([context, version])
+  @@index([context, status])
 }
 
 model AuditLog {

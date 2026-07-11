@@ -52,6 +52,8 @@ export interface EvaluateOptions {
   now: Date;
   /** Assumption keys the user has already confirmed or rejected. */
   decidedAssumptionKeys?: Set<string>;
+  /** Governed source freshness/version signature; folded into the input hash. */
+  governanceSignature?: string;
 }
 
 /**
@@ -158,9 +160,10 @@ export function evaluate(opts: EvaluateOptions): EvaluationOutput {
     }));
 
   const signature = rulesetSignature(opts.rules);
+  const governanceSignature = opts.governanceSignature ?? "";
   const knowledgeVersion = opts.rules.reduce((max, r) => Math.max(max, r.pathway?.version ?? 1), 1);
   const inputHash = createHash("sha256")
-    .update(stableStringify({ facts, signature }))
+    .update(stableStringify({ facts, signature, governanceSignature }))
     .digest("hex");
 
   return {
@@ -168,6 +171,7 @@ export function evaluate(opts: EvaluateOptions): EvaluationOutput {
     factsVersion: 0, // set by caller (normalization version)
     knowledgeVersion,
     rulesetSignature: signature,
+    governanceSignature,
     inputHash,
     facts,
     recommendations,

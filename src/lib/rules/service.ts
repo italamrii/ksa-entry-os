@@ -8,7 +8,11 @@ import { prisma } from "@/lib/prisma";
 import { requireOrgAccess } from "@/lib/organizations";
 import { normalizeFacts, type RawAnswers, type RawProfile } from "@/lib/rules/facts";
 import { evaluate } from "@/lib/rules/evaluate";
-import type { AssumptionTemplate, EngineRule, EngineSource, EvaluationOutput } from "@/lib/rules/types";
+import { evaluateFreshness } from "@/lib/governance/freshness";
+import { isAcceptableForProduction } from "@/lib/governance/classification";
+import { alertGovernanceExclusion } from "@/lib/governance/service";
+import { getDisclaimer } from "@/lib/governance/disclaimers";
+import type { AssumptionTemplate, EngineRule, EngineSource, EvaluationOutput, ExcludedPathway } from "@/lib/rules/types";
 import type { Condition } from "@/lib/rules/conditions";
 
 const publishedRuleInclude = {
@@ -17,8 +21,19 @@ const publishedRuleInclude = {
 
 type RuleWithPathway = Prisma.RuleGetPayload<{ include: typeof publishedRuleInclude }>;
 
-/** Load PUBLISHED, in-date, non-deleted rules and map them to engine rules. */
-export async function loadPublishedEngineRules(now: Date): Promise<EngineRule[]> {
+export interface GovernedRulesLoad {
+  rules: EngineRule[];
+  exclusions: ExcludedPathway[];
+  governanceSignature: string;
+}
+
+/**
+ * Governance-aware rule loading. A rule participates in production evaluation
+ * ONLY when it is PUBLISHED + in-date AND its pathway is PUBLISHED + fresh AND
+ * it is backed by at least one PUBLISHED, fresh, production-acceptable source.
+ * Governance-excluded published rules yield a structured reason + an alert.
+ */
+export async function loadGovernedEngineRules(now: Date): Promise<GovernedRulesLoad> {
   const rules = await prisma.rule.findMany({
     where: {
       status: "PUBLISHED",
@@ -30,7 +45,47 @@ export async function loadPublishedEngineRules(now: Date): Promise<EngineRule[]>
     },
     include: publishedRuleInclude,
   });
-  return rules.map(mapRule);
+
+  const included: EngineRule[] = [];
+  const exclusions: ExcludedPathway[] = [];
+  const sigParts: string[] = [];
+
+  for (const rule of rules) {
+    const pathway = rule.pathway;
+    const reason = governanceReason(pathway, now);
+    if (reason) {
+      exclusions.push({ ruleKey: rule.ruleKey, pathwaySlug: pathway?.slug ?? null, reasonEn: reason.en, reasonAr: reason.ar, failedFacts: [] });
+      await alertGovernanceExclusion(rule.id, rule.ruleKey, reason.en);
+      continue;
+    }
+    included.push(mapRule(rule));
+    sigParts.push(`p:${pathway!.id}:${pathway!.version}:${pathway!.status}`);
+    for (const ps of pathway!.sources) {
+      sigParts.push(`s:${ps.source.id}:${ps.source.version}:${ps.source.status}`);
+    }
+  }
+
+  return { rules: included, exclusions, governanceSignature: [...new Set(sigParts)].sort().join("|") };
+}
+
+function governanceReason(pathway: RuleWithPathway["pathway"], now: Date): { en: string; ar: string } | null {
+  if (!pathway) return { en: "No pathway is linked to this rule.", ar: "لا يوجد مسار مرتبط بهذه القاعدة." };
+  if (pathway.deletedAt) return { en: "Linked pathway is retired.", ar: "المسار المرتبط متقاعد." };
+  if (pathway.status !== "PUBLISHED") return { en: `Linked pathway is not published (${pathway.status}).`, ar: "المسار المرتبط غير منشور." };
+  const pathwayFresh = evaluateFreshness({ status: pathway.status, nextReview: pathway.nextReview, lastVerified: pathway.lastReviewed }, now);
+  if (pathwayFresh.stale) return { en: "Linked pathway is stale (review overdue).", ar: "المسار المرتبط قديم (المراجعة متأخرة)." };
+
+  const sources = pathway.sources.map((ps) => ps.source);
+  const usable = sources.filter(
+    (s) =>
+      s.status === "PUBLISHED" &&
+      isAcceptableForProduction(s.classification as never) &&
+      !evaluateFreshness({ status: s.status, nextReview: s.nextReview, availability: s.availability, lastVerified: s.lastVerified, requireVerificationMetadata: true }, now).stale
+  );
+  if (usable.length === 0) {
+    return { en: "No published, fresh, production-acceptable source backs this pathway.", ar: "لا يوجد مصدر منشور وحديث ومقبول يدعم هذا المسار." };
+  }
+  return null;
 }
 
 function mapRule(rule: RuleWithPathway): EngineRule {
@@ -41,9 +96,12 @@ function mapRule(rule: RuleWithPathway): EngineRule {
       title: s.title,
       url: s.url,
       status: s.status,
+      classification: s.classification,
+      version: s.version,
       authority: s.authority?.nameEn ?? null,
       lastVerified: s.lastVerified ? s.lastVerified.toISOString() : null,
       nextReview: s.nextReview ? s.nextReview.toISOString() : null,
+      stale: false,
     }));
 
   return {
@@ -139,15 +197,27 @@ export async function evaluateAssessment(user: AuthContext, assessmentId: string
   const now = new Date();
   const { assessment, normalized } = await buildAssessmentFacts(user, assessmentId);
 
-  const rules = await loadPublishedEngineRules(now);
+  const governed = await loadGovernedEngineRules(now);
   const decisions = await prisma.assumptionDecision.findMany({
     where: { assessmentId },
     select: { assumptionKey: true },
   });
   const decidedAssumptionKeys = new Set(decisions.map((d) => d.assumptionKey));
 
-  const output = evaluate({ facts: normalized.facts, rules, now, decidedAssumptionKeys });
+  const output = evaluate({
+    facts: normalized.facts,
+    rules: governed.rules,
+    now,
+    decidedAssumptionKeys,
+    governanceSignature: governed.governanceSignature,
+  });
   output.factsVersion = normalized.version;
+  // Surface governance-excluded pathways (stale/unpublished/retired dependency).
+  output.excludedPathways.push(...governed.exclusions);
+  output.summary.excludedRules = output.excludedPathways.length;
+  // Centralized, governed disclaimer (never a scattered hardcoded string).
+  const disclaimer = await getDisclaimer("EVALUATION");
+  output.summary.disclaimer = disclaimer.textEn;
 
   // Reuse the latest result if nothing changed.
   const latest = await prisma.evaluationResult.findFirst({
@@ -177,6 +247,7 @@ async function persistEvaluation(
       factsVersion: output.factsVersion,
       knowledgeVersion: output.knowledgeVersion,
       rulesetSignature: output.rulesetSignature,
+      governanceSignature: output.governanceSignature,
       inputHash: output.inputHash,
       factsSnapshot: { facts: output.facts, originalAnswers } as unknown as Prisma.InputJsonValue,
       sourcesSnapshot: output.sources as unknown as Prisma.InputJsonValue,
@@ -268,10 +339,12 @@ export async function buildEvaluationView(result: EvaluationRow) {
   return {
     id: result.id,
     createdAt: result.createdAt,
+    informationCutoff: result.createdAt,
     engineVersion: result.engineVersion,
     factsVersion: result.factsVersion,
     knowledgeVersion: result.knowledgeVersion,
     rulesetSignature: result.rulesetSignature,
+    governanceSignature: result.governanceSignature,
     facts: (result.factsSnapshot as Record<string, unknown>).facts ?? {},
     recommendations: result.recommendations.map((r) => ({
       id: r.id,

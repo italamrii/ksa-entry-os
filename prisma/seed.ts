@@ -1,6 +1,8 @@
 import { PrismaClient, Prisma } from "@prisma/client";
 import { hashPassword } from "../src/lib/auth/password";
 import { provisionPersonalOrganization } from "../src/lib/organizations";
+import { extractDomain, classifyByDomain } from "../src/lib/governance/classification";
+import { FALLBACK_DISCLAIMERS } from "../src/lib/governance/disclaimers";
 
 const prisma = new PrismaClient();
 
@@ -421,15 +423,17 @@ async function main() {
     });
 
     if (req.officialUrl) {
+      const domain = extractDomain(req.officialUrl);
+      const classification = classifyByDomain(domain);
       let source = await prisma.officialSource.findFirst({ where: { url: req.officialUrl, title: `${req.titleEn} (official)` } });
-      if (!source) {
-        source = await prisma.officialSource.create({
-          data: {
-            authorityId: req.authorityId, title: `${req.titleEn} (official)`, url: req.officialUrl,
-            language: "en", jurisdiction: "SA", status: "PUBLISHED", lastVerified: now, nextReview, version: 1,
-          },
-        });
-      }
+      const sourceData = {
+        authorityId: req.authorityId, title: `${req.titleEn} (official)`, url: req.officialUrl, domain,
+        language: "en", jurisdiction: "SA", classification, availability: "AVAILABLE" as const,
+        status: "PUBLISHED" as const, effectiveDate: now, lastVerified: now, nextReview, translationComplete: true,
+        limitationsEn: LIMIT_EN, limitationsAr: LIMIT_AR, version: 1,
+      };
+      if (!source) source = await prisma.officialSource.create({ data: sourceData });
+      else source = await prisma.officialSource.update({ where: { id: source.id }, data: { classification, domain, availability: "AVAILABLE", lastVerified: now, nextReview } });
       const link = await prisma.pathwaySource.findUnique({ where: { pathwayId_sourceId: { pathwayId: pathway.id, sourceId: source.id } } });
       if (!link) await prisma.pathwaySource.create({ data: { pathwayId: pathway.id, sourceId: source.id } });
     }
@@ -452,6 +456,17 @@ async function main() {
     });
   }
   console.log(`Seeded ${ruleset.length} starter rules/pathways`);
+
+  // Centralized, versioned disclaimers (single source of truth for legal copy).
+  for (const context of Object.keys(FALLBACK_DISCLAIMERS) as (keyof typeof FALLBACK_DISCLAIMERS)[]) {
+    const copy = FALLBACK_DISCLAIMERS[context];
+    await prisma.disclaimer.upsert({
+      where: { context_version: { context, version: 1 } },
+      update: { textEn: copy.en, textAr: copy.ar, status: "PUBLISHED" },
+      create: { context, version: 1, textEn: copy.en, textAr: copy.ar, status: "PUBLISHED" },
+    });
+  }
+  console.log("Seeded centralized disclaimers");
 
   // Canonical entry objectives (mirror of ENTRY_GOALS constants).
   const entryObjectives = [
