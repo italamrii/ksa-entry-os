@@ -23,7 +23,8 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
-    resolver: zodResolver(registerSchema),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    resolver: zodResolver(registerSchema) as any,
   });
 
   useEffect(() => {

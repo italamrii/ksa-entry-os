@@ -75,12 +75,20 @@ Open [http://localhost:3000](http://localhost:3000)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (must be set on the **web** service in Railway) |
 | `AUTH_SECRET` | Yes | Min 32 chars for JWT signing |
 | `NEXT_PUBLIC_APP_URL` | Yes | App URL (e.g. http://localhost:3000) |
 | `PAYMENT_PROVIDER_KEY` | No | Payment provider API key |
 | `SEED_ADMIN_EMAIL` | No | Admin email for seed |
 | `SEED_ADMIN_PASSWORD` | No | Admin password for seed |
+
+### Railway registration checklist
+
+1. Attach the Postgres plugin and copy `DATABASE_URL` onto the **web** service variables (Reference Variable → Postgres → `DATABASE_URL`).
+2. Prefer the private URL when web + Postgres share a Railway private network; use `DATABASE_PUBLIC_URL` only if private connectivity fails.
+3. After deploy: `npx prisma db push && npx tsx prisma/seed.ts`
+4. Verify connectivity: `GET /api/health/db` should return `{ ok: true, database: "connected" }`
+5. Verify persistence: `npm run test:register` (creates and deletes a throwaway user)
 
 ## Security Notes
 

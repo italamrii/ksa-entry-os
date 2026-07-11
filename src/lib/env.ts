@@ -27,6 +27,13 @@ function validateEnv() {
     console.warn(`[env] Warning: ${missing}`);
   }
 
+  // Always surface a clear warning when DATABASE_URL is empty (common Railway misconfig)
+  if (!process.env.DATABASE_URL?.trim()) {
+    console.error(
+      "[env] DATABASE_URL is empty. Registration and all Prisma queries will fail until it is set."
+    );
+  }
+
   return parsed.success
     ? parsed.data
     : {

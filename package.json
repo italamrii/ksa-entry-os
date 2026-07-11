@@ -13,6 +13,7 @@
     "db:migrate": "prisma migrate dev",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "test:register": "tsx scripts/test-registration.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

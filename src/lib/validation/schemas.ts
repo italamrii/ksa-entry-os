@@ -1,8 +1,16 @@
 import { z } from "zod";
 
+/** Coerce blank strings from HTML selects to undefined */
+function optionalId(value: unknown): string | undefined {
+  if (value == null) return undefined;
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed === "" ? undefined : trimmed;
+}
+
 export const registerSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters").max(100),
-  email: z.string().email("Invalid email address"),
+  name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
+  email: z.string().trim().email("Invalid email address"),
   password: z
     .string()
     .min(8, "Password must be at least 8 characters")
@@ -10,31 +18,31 @@ export const registerSchema = z.object({
     .regex(/[A-Z]/, "Must contain an uppercase letter")
     .regex(/[a-z]/, "Must contain a lowercase letter")
     .regex(/[0-9]/, "Must contain a number"),
-  companyName: z.string().min(2).max(200),
-  country: z.string().min(2).max(100),
-  sectorId: z.string().optional(),
-  companyType: z.string().min(1),
-  entryGoal: z.string().min(1),
+  companyName: z.string().trim().min(2).max(200),
+  country: z.string().trim().min(2).max(100),
+  sectorId: z.preprocess(optionalId, z.string().optional()),
+  companyType: z.string().trim().min(1, "Company type is required"),
+  entryGoal: z.string().trim().min(1, "Entry goal is required"),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: z.string().trim().email(),
   password: z.string().min(1),
 });
 
 export const onboardingSchema = z.object({
-  companyName: z.string().min(2).max(200),
-  country: z.string().min(2).max(100),
-  sectorId: z.string().optional(),
-  companyType: z.string().min(1),
-  entryGoal: z.string().min(1),
+  companyName: z.string().trim().min(2).max(200),
+  country: z.string().trim().min(2).max(100),
+  sectorId: z.preprocess(optionalId, z.string().optional()),
+  companyType: z.string().trim().min(1),
+  entryGoal: z.string().trim().min(1),
   locale: z.enum(["en", "ar"]).default("en"),
 });
 
 export const assessmentSchema = z.object({
   companyOrigin: z.enum(["foreign", "local"]),
   hasForeignEntity: z.boolean(),
-  sectorId: z.string().optional(),
+  sectorId: z.preprocess(optionalId, z.string().optional()),
   businessActivity: z.string().optional(),
   hiringEmployees: z.boolean(),
   sellingToGov: z.boolean(),
@@ -45,10 +53,10 @@ export const assessmentSchema = z.object({
 });
 
 export const settingsSchema = z.object({
-  name: z.string().min(2).max(100),
+  name: z.string().trim().min(2).max(100),
   locale: z.enum(["en", "ar"]),
-  companyName: z.string().min(2).max(200).optional(),
-  country: z.string().min(2).max(100).optional(),
+  companyName: z.string().trim().min(2).max(200).optional(),
+  country: z.string().trim().min(2).max(100).optional(),
 });
 
 export const requirementSchema = z.object({
@@ -76,3 +84,8 @@ export const requirementSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type AssessmentInput = z.infer<typeof assessmentSchema>;
+
+/** Normalize email for storage/lookup */
+export function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
