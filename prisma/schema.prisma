@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum Complexity {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum RequestStatus {
+  PENDING
+  IN_REVIEW
+  COMPLETED
+  CANCELLED
+}
+
+enum PlanType {
+  FREE
+  PROFESSIONAL
+  BUSINESS
+}
+
+model User {
+  id               String    @id @default(cuid())
+  name             String
+  email            String    @unique
+  passwordHash     String
+  role             UserRole  @default(USER)
+  companyName      String?
+  country          String?
+  sectorId         String?
+  companyType      String?
+  entryGoal        String?
+  locale           String    @default("en")
+  onboardingDone   Boolean   @default(false)
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  totpSecret       String?
+  totpEnabled      Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  sector       Sector?       @relation(fields: [sectorId], references: [id])
+  assessments  Assessment[]
+  requests     ReportRequest[]
+  payments     Payment[]
+  auditLogs    AuditLog[]
+  sessions     Session[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+}
+
+model Sector {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nameEn    String
+  nameAr    String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users         User[]
+  requirements  Requirement[]
+}
+
+model Authority {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  nameEn    String
+  nameAr    String
+  website   String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  requirements Requirement[]
+  officialLinks OfficialLink[]
+}
+
+model OfficialLink {
+  id          String   @id @default(cuid())
+  authorityId String?
+  titleEn     String
+  titleAr     String
+  url         String
+  descriptionEn String?
+  descriptionAr String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  authority Authority? @relation(fields: [authorityId], references: [id])
+
+  @@index([authorityId])
+}
+
+model Requirement {
+  id              String     @id @default(cuid())
+  slug            String     @unique
+  titleEn         String
+  titleAr         String
+  descriptionEn   String     @db.Text
+  descriptionAr   String     @db.Text
+  authorityId     String?
+  officialUrl     String?
+  appliesWhenEn   String?
+  appliesWhenAr   String?
+  complexity      Complexity @default(MEDIUM)
+  riskLevel       RiskLevel  @default(MEDIUM)
+  categoryEn      String?
+  categoryAr      String?
+  disclaimerEn    String?    @db.Text
+  disclaimerAr    String?    @db.Text
+  order           Int        @default(0)
+  isActive        Boolean    @default(true)
+  ruleKey         String?
+  sectorId        String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  authority Authority? @relation(fields: [authorityId], references: [id])
+  sector    Sector?    @relation(fields: [sectorId], references: [id])
+  assessmentSteps AssessmentStep[]
+
+  @@index([ruleKey])
+  @@index([sectorId])
+  @@index([authorityId])
+}
+
+model Assessment {
+  id              String   @id @default(cuid())
+  userId          String
+  companyOrigin   String
+  hasForeignEntity Boolean
+  sectorId        String?
+  businessActivity String?
+  hiringEmployees Boolean  @default(false)
+  sellingToGov    Boolean  @default(false)
+  needsLocalOffice Boolean @default(false)
+  invoiceCustomers Boolean @default(false)
+  sectorLicensing Boolean  @default(false)
+  launchTimeline  String?
+  isPreview       Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user    User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  steps   AssessmentStep[]
+  requests ReportRequest[]
+
+  @@index([userId])
+}
+
+model AssessmentStep {
+  id             String   @id @default(cuid())
+  assessmentId   String
+  requirementId  String
+  order          Int      @default(0)
+  createdAt      DateTime @default(now())
+
+  assessment  Assessment  @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  requirement Requirement @relation(fields: [requirementId], references: [id])
+
+  @@unique([assessmentId, requirementId])
+  @@index([assessmentId])
+}
+
+model ReportRequest {
+  id           String        @id @default(cuid())
+  userId       String
+  assessmentId String?
+  plan         PlanType      @default(FREE)
+  status       RequestStatus @default(PENDING)
+  notes        String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessment Assessment? @relation(fields: [assessmentId], references: [id])
+  payments   Payment[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  userId          String
+  requestId       String
+  providerPaymentId String?
+  amount          Int
+  currency        String        @default("SAR")
+  status          PaymentStatus @default(PENDING)
+  invoiceNumber   String        @unique
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  user    User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  request ReportRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([requestId])
+  @@index([status])
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String?
+  entityId  String?
+  metadata  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}
