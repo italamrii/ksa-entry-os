@@ -16,8 +16,9 @@
     "test:register": "tsx scripts/test-registration.ts",
     "test:security": "tsx scripts/test-security.ts",
     "test:domain": "tsx scripts/test-domain.ts",
+    "test:rules": "tsx scripts/test-rules.ts",
     "test:unit": "vitest run",
-    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts",
+    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts",
     "postinstall": "prisma generate"
   },
   "prisma": {

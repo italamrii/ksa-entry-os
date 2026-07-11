@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 import { hashPassword } from "../src/lib/auth/password";
 import { provisionPersonalOrganization } from "../src/lib/organizations";
 
@@ -353,6 +353,105 @@ async function main() {
       },
     });
   }
+
+  // ---------------------------------------------------------------------------
+  // Stage 4 starter ruleset. Each rule/pathway/source is derived ONLY from the
+  // already-approved Requirement content above and its official URL. No new
+  // legal requirements are invented. Everything is marked PUBLISHED + verified
+  // today with a review date and an explicit limitations note.
+  // ---------------------------------------------------------------------------
+  const reqBySlug = Object.fromEntries(
+    (await prisma.requirement.findMany()).map((r) => [r.slug, r])
+  );
+  const REVIEW_DAYS = 180;
+  const now = new Date();
+  const nextReview = new Date(now.getTime() + REVIEW_DAYS * 24 * 60 * 60 * 1000);
+  const LIMIT_EN = "Starter rule based on approved public content. Verify current requirements with the official source.";
+  const LIMIT_AR = "قاعدة تمهيدية مبنية على محتوى عام معتمد. تحقق من المتطلبات الحالية عبر المصدر الرسمي.";
+
+  type CondJson = Record<string, unknown>;
+  const ruleset: {
+    reqSlug: string;
+    ruleKey: string;
+    priority: number;
+    conditions: CondJson;
+    assumptions?: { key: string; textEn: string; textAr: string; confidence: "LOW" | "MEDIUM" | "HIGH"; impactIfFalseEn: string; impactIfFalseAr: string }[];
+  }[] = [
+    { reqSlug: "market-entry-overview", ruleKey: "always", priority: 12, conditions: { op: "all", conditions: [] } },
+    {
+      reqSlug: "misa-foreign-investment", ruleKey: "misa_investment", priority: 18,
+      conditions: { op: "eq", fact: "company.origin", value: "foreign" },
+      assumptions: [{ key: "assume.foreign_ownership", textEn: "Assumes a foreign ownership structure.", textAr: "يفترض هيكل ملكية أجنبية.", confidence: "MEDIUM", impactIfFalseEn: "If ownership is fully local, MISA licensing may not apply.", impactIfFalseAr: "إذا كانت الملكية محلية بالكامل، فقد لا ينطبق ترخيص وزارة الاستثمار." }],
+    },
+    { reqSlug: "sbc-business-setup", ruleKey: "sbc_setup", priority: 14, conditions: { op: "any", conditions: [{ op: "eq", fact: "company.origin", value: "foreign" }, { op: "bool", fact: "presence.localOffice", value: true }] } },
+    { reqSlug: "commercial-registration", ruleKey: "commercial_registration", priority: 15, conditions: { op: "any", conditions: [{ op: "bool", fact: "presence.localOffice", value: true }, { op: "eq", fact: "company.origin", value: "local" }] } },
+    { reqSlug: "gosi-employer", ruleKey: "gosi_registration", priority: 10, conditions: { op: "bool", fact: "intent.hiring", value: true } },
+    { reqSlug: "qiwa-labor", ruleKey: "qiwa_registration", priority: 9, conditions: { op: "bool", fact: "intent.hiring", value: true } },
+    { reqSlug: "mudad-wps", ruleKey: "mudad_registration", priority: 8, conditions: { op: "bool", fact: "intent.hiring", value: true } },
+    {
+      reqSlug: "zatca-tax", ruleKey: "zatca_vat", priority: 11,
+      conditions: { op: "bool", fact: "intent.invoiceCustomers", value: true },
+      assumptions: [{ key: "assume.vat_threshold", textEn: "Assumes VAT registration thresholds may be met.", textAr: "يفترض احتمال بلوغ عتبات تسجيل ضريبة القيمة المضافة.", confidence: "LOW", impactIfFalseEn: "Below threshold, VAT registration may not be required.", impactIfFalseAr: "دون العتبة قد لا يلزم التسجيل." }],
+    },
+    { reqSlug: "government-sales", ruleKey: "government_sales", priority: 16, conditions: { op: "bool", fact: "intent.sellToGov", value: true } },
+    { reqSlug: "balady-food", ruleKey: "sector_food", priority: 13, conditions: { op: "eq", fact: "sector.slug", value: "food-beverage" } },
+    { reqSlug: "fintech-licensing", ruleKey: "sector_fintech", priority: 17, conditions: { op: "all", conditions: [{ op: "eq", fact: "sector.slug", value: "technology-saas" }, { op: "bool", fact: "sector.licensing", value: true }] } },
+    { reqSlug: "sfda-healthcare", ruleKey: "sector_healthcare", priority: 13, conditions: { op: "eq", fact: "sector.slug", value: "healthcare-support" } },
+    { reqSlug: "tourism-licensing", ruleKey: "sector_tourism", priority: 12, conditions: { op: "eq", fact: "sector.slug", value: "tourism-events" } },
+    { reqSlug: "fast-timeline-planning", ruleKey: "fast_timeline", priority: 7, conditions: { op: "eq", fact: "plan.timeline", value: "1-3" } },
+  ];
+
+  for (const rs of ruleset) {
+    const req = reqBySlug[rs.reqSlug];
+    if (!req) continue;
+    const requiresProfessionalReview = Boolean(req.disclaimerEn);
+
+    const pathway = await prisma.pathway.upsert({
+      where: { slug: `pw-${rs.reqSlug}` },
+      update: {
+        titleEn: req.titleEn, titleAr: req.titleAr, descriptionEn: req.descriptionEn, descriptionAr: req.descriptionAr,
+        status: "PUBLISHED", complexity: req.complexity, riskLevel: req.riskLevel, sectorId: req.sectorId,
+        requiresProfessionalReview, requiresVerification: true, lastReviewed: now, nextReview,
+      },
+      create: {
+        slug: `pw-${rs.reqSlug}`, titleEn: req.titleEn, titleAr: req.titleAr, descriptionEn: req.descriptionEn, descriptionAr: req.descriptionAr,
+        status: "PUBLISHED", version: 1, complexity: req.complexity, riskLevel: req.riskLevel, sectorId: req.sectorId,
+        requiresProfessionalReview, requiresVerification: true, effectiveDate: now, lastReviewed: now, nextReview,
+      },
+    });
+
+    if (req.officialUrl) {
+      let source = await prisma.officialSource.findFirst({ where: { url: req.officialUrl, title: `${req.titleEn} (official)` } });
+      if (!source) {
+        source = await prisma.officialSource.create({
+          data: {
+            authorityId: req.authorityId, title: `${req.titleEn} (official)`, url: req.officialUrl,
+            language: "en", jurisdiction: "SA", status: "PUBLISHED", lastVerified: now, nextReview, version: 1,
+          },
+        });
+      }
+      const link = await prisma.pathwaySource.findUnique({ where: { pathwayId_sourceId: { pathwayId: pathway.id, sourceId: source.id } } });
+      if (!link) await prisma.pathwaySource.create({ data: { pathwayId: pathway.id, sourceId: source.id } });
+    }
+
+    await prisma.rule.upsert({
+      where: { ruleKey_version: { ruleKey: rs.ruleKey, version: 1 } },
+      update: {
+        titleEn: req.titleEn, titleAr: req.titleAr, explanationEn: req.descriptionEn, explanationAr: req.descriptionAr,
+        status: "PUBLISHED", priority: rs.priority, conditions: rs.conditions as Prisma.InputJsonValue, pathwayId: pathway.id,
+        assumptions: rs.assumptions ?? [], requiresProfessionalReview, requiresVerification: true,
+        effectiveDate: now, limitationsEn: LIMIT_EN, limitationsAr: LIMIT_AR,
+      },
+      create: {
+        ruleKey: rs.ruleKey, version: 1, titleEn: req.titleEn, titleAr: req.titleAr,
+        explanationEn: req.descriptionEn, explanationAr: req.descriptionAr,
+        status: "PUBLISHED", priority: rs.priority, conditions: rs.conditions as Prisma.InputJsonValue, pathwayId: pathway.id,
+        assumptions: rs.assumptions ?? [], uncertainty: "MEDIUM", requiresProfessionalReview, requiresVerification: true,
+        effectiveDate: now, limitationsEn: LIMIT_EN, limitationsAr: LIMIT_AR,
+      },
+    });
+  }
+  console.log(`Seeded ${ruleset.length} starter rules/pathways`);
 
   // Canonical entry objectives (mirror of ENTRY_GOALS constants).
   const entryObjectives = [

@@ -155,12 +155,14 @@ model Organization {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  memberships   OrganizationMembership[]
-  profile       CompanyProfile?
-  assessments   Assessment[]
-  reports       Report[]
-  payments      Payment[]
-  subscriptions Subscription[]
+  memberships         OrganizationMembership[]
+  profile             CompanyProfile?
+  assessments         Assessment[]
+  reports             Report[]
+  payments            Payment[]
+  subscriptions       Subscription[]
+  evaluationResults   EvaluationResult[]
+  assumptionDecisions AssumptionDecision[]
 
   @@index([status])
 }
@@ -355,6 +357,7 @@ model Pathway {
   sources         PathwaySource[]
   assumptions     PathwayAssumption[]
   recommendations Recommendation[]
+  rules           Rule[]
 
   @@index([status])
   @@index([sectorId])
@@ -492,13 +495,15 @@ model Assessment {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  user            User               @relation(fields: [userId], references: [id], onDelete: Cascade)
-  organization    Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  steps           AssessmentStep[]
-  answers         AssessmentAnswer[]
-  recommendations Recommendation[]
-  requests        ReportRequest[]
-  reports         Report[]
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  organization        Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  steps               AssessmentStep[]
+  answers             AssessmentAnswer[]
+  recommendations     Recommendation[]
+  requests            ReportRequest[]
+  reports             Report[]
+  evaluationResults   EvaluationResult[]
+  assumptionDecisions AssumptionDecision[]
 
   @@index([userId])
   @@index([organizationId])
@@ -532,27 +537,128 @@ model AssessmentStep {
   @@index([assessmentId])
 }
 
-/// Explainable, traceable recommendation produced for an assessment.
+/// Explainable, traceable recommendation produced for an assessment by a single
+/// evaluation run. Immutable — regeneration creates a new EvaluationResult with
+/// new recommendation rows rather than mutating these.
 model Recommendation {
   id                         String          @id @default(cuid())
   assessmentId               String
+  evaluationResultId         String?
   pathwayId                  String?
   ruleId                     String?
+  ruleKey                    String?
+  ruleVersion                Int?
   reason                     String          @db.Text
+  /// Machine-readable structured reasoning (triggered facts, matched rule,
+  /// pathway, assumptions, sources, flags) + localized presentation text.
+  reasoning                  Json?
   applicability              Json?
   assumptions                Json?
+  riskFactors                Json?
+  priorityScore              Int?
+  priorityFactors            Json?
+  nextActions                Json?
   uncertainty                ConfidenceLevel @default(MEDIUM)
   requiresVerification       Boolean         @default(true)
   requiresProfessionalReview Boolean         @default(false)
   order                      Int             @default(0)
   createdAt                  DateTime        @default(now())
 
-  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  assessment       Assessment        @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  evaluationResult EvaluationResult? @relation(fields: [evaluationResultId], references: [id], onDelete: Cascade)
   // Retirement of a pathway must not silently delete historical recommendations.
-  pathway    Pathway?   @relation(fields: [pathwayId], references: [id], onDelete: SetNull)
+  pathway          Pathway?          @relation(fields: [pathwayId], references: [id], onDelete: SetNull)
 
   @@index([assessmentId])
+  @@index([evaluationResultId])
   @@index([pathwayId])
+}
+
+/// Versioned, structured, deterministically-evaluated rule. Only PUBLISHED,
+/// in-date rules participate in production evaluation. Conditions are a
+/// declarative tree (no executable code / eval).
+model Rule {
+  id                         String          @id @default(cuid())
+  ruleKey                    String
+  version                    Int             @default(1)
+  titleEn                    String
+  titleAr                    String
+  explanationEn              String          @db.Text
+  explanationAr              String          @db.Text
+  status                     ContentStatus   @default(DRAFT)
+  priority                   Int             @default(0)
+  effectiveDate              DateTime?
+  expiryDate                 DateTime?
+  /// Declarative condition tree evaluated against normalized facts.
+  conditions                 Json
+  outcomes                   Json?
+  pathwayId                  String?
+  /// Assumption templates surfaced when this rule matches.
+  assumptions                Json?
+  uncertainty                ConfidenceLevel @default(MEDIUM)
+  requiresProfessionalReview Boolean         @default(false)
+  requiresVerification       Boolean         @default(true)
+  reviewerId                 String?
+  limitationsEn              String?         @db.Text
+  limitationsAr              String?         @db.Text
+  deletedAt                  DateTime?
+  createdAt                  DateTime        @default(now())
+  updatedAt                  DateTime        @updatedAt
+
+  pathway Pathway? @relation(fields: [pathwayId], references: [id], onDelete: SetNull)
+
+  @@unique([ruleKey, version])
+  @@index([status])
+  @@index([pathwayId])
+}
+
+/// Immutable snapshot of one deterministic evaluation of an assessment.
+/// Regeneration only happens when facts or the ruleset signature change.
+model EvaluationResult {
+  id               String   @id @default(cuid())
+  organizationId   String
+  assessmentId     String
+  engineVersion    String
+  factsVersion     Int
+  knowledgeVersion Int      @default(1)
+  /// Signature of the participating rule (ruleKey:version) set — changes when a
+  /// rule is published/updated/retired.
+  rulesetSignature String
+  /// sha256 of normalized facts + rulesetSignature; identical hash => reuse.
+  inputHash        String
+  factsSnapshot    Json
+  sourcesSnapshot  Json
+  risks            Json
+  assumptions      Json
+  summary          Json
+  createdAt        DateTime @default(now())
+
+  organization    Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessment      Assessment       @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  recommendations Recommendation[]
+
+  @@index([assessmentId])
+  @@index([organizationId])
+  @@index([assessmentId, inputHash])
+}
+
+/// User confirmation/dismissal of a surfaced assumption. Kept separate so
+/// EvaluationResult snapshots stay immutable.
+model AssumptionDecision {
+  id              String   @id @default(cuid())
+  organizationId  String
+  assessmentId    String
+  assumptionKey   String
+  decision        String // CONFIRMED | REJECTED
+  decidedByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  assessment   Assessment   @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+
+  @@unique([assessmentId, assumptionKey])
+  @@index([assessmentId])
 }
 
 // ---------------------------------------------------------------------------
