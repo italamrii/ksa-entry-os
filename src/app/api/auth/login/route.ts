@@ -10,6 +10,7 @@ import {
   normalizeEmailKey,
 } from "@/lib/rate-limit";
 import { createAuditLog } from "@/lib/audit";
+import { logServerError } from "@/lib/log";
 
 export const runtime = "nodejs";
 
@@ -94,7 +95,10 @@ export async function POST(request: NextRequest) {
       },
       { headers: noStore }
     );
-  } catch {
+  } catch (err) {
+    // Genuine failure (e.g. DB unreachable). Log the exact cause safely; the
+    // client only ever sees a generic message (no enumeration, no internals).
+    logServerError("login", err);
     return NextResponse.json({ error: "Login failed" }, { status: 500, headers: noStore });
   }
 }
