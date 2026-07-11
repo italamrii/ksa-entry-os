@@ -7,6 +7,7 @@ import {
   type SessionPayload,
 } from "@/lib/auth/session";
 import { generateRawSessionToken, hashSessionToken } from "@/lib/auth/token-hash";
+import { logServerError } from "@/lib/log";
 
 export interface AuthUser {
   id: string;
@@ -165,11 +166,9 @@ export function authErrorResponse(err: unknown): Response {
   if (status === 404) {
     return Response.json({ error: "Not found" }, { status: 404, headers });
   }
-  if (process.env.NODE_ENV !== "production" && err instanceof Error) {
-    console.error("[auth]", err.message);
-  } else if (err instanceof Error) {
-    console.error("[auth] request failed", { name: err.name });
-  }
+  // Genuine server/persistence failure. Log the exact cause server-side (safely,
+  // no secrets/stack), but only ever return a generic body to the client.
+  logServerError("auth", err);
   return Response.json({ error: "Request failed" }, { status: 500, headers });
 }
 
