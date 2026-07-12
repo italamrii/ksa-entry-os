@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { LayoutDashboard, FileSearch, CreditCard, Settings, Shield, ClipboardList } from "lucide-react";
+import { LayoutDashboard, FileSearch, CreditCard, Settings, Shield, ClipboardList, Compass } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 
 const links = [
+  { href: "/workspace", icon: Compass, labelEn: "Workspace", labelAr: "مساحة العمل" },
   { href: "/dashboard", icon: LayoutDashboard, labelEn: "Dashboard", labelAr: "لوحة التحكم" },
   { href: "/assessment/new", icon: FileSearch, labelEn: "New Assessment", labelAr: "تقييم جديد" },
   { href: "/requests", icon: ClipboardList, labelEn: "Entry Reports", labelAr: "تقارير الدخول" },
