@@ -40,11 +40,11 @@ export function SourceDrawer({ locale, source, onClose }: { locale: Locale; sour
         role="dialog"
         aria-modal="true"
         aria-label={t(locale, "Official source details", "تفاصيل المصدر الرسمي")}
-        className="relative flex h-full w-full max-w-md flex-col overflow-y-auto border-s border-[var(--border-subtle)] bg-[var(--background)] p-6 shadow-2xl motion-safe:animate-in"
+        className="relative flex h-full w-full max-w-md flex-col overflow-y-auto border-s border-[var(--border-subtle)] bg-[var(--card)] p-6 shadow-2xl animate-drawer-in motion-reduce:animate-none sm:max-w-md max-sm:mt-auto max-sm:max-h-[85vh] max-sm:rounded-t-[var(--radius-lg)]"
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-foreground">{source.title}</h2>
-          <button ref={closeRef} type="button" onClick={onClose} aria-label={t(locale, "Close", "إغلاق")} className="rounded-lg p-1 text-[var(--muted)] outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-emerald-500/50">
+          <button ref={closeRef} type="button" onClick={onClose} aria-label={t(locale, "Close", "إغلاق")} className="rounded-[var(--radius-sm)] p-1 text-[var(--muted)] outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]">
             <X className="h-5 w-5" aria-hidden />
           </button>
         </div>
@@ -75,7 +75,7 @@ export function SourceDrawer({ locale, source, onClose }: { locale: Locale; sour
           href={source.url}
           target="_blank"
           rel="noopener noreferrer nofollow"
-          className="mt-4 inline-flex items-center justify-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white outline-none hover:bg-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+          className="mt-4 inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-[var(--accent)] px-4 py-2 text-sm font-medium text-white outline-none hover:bg-[var(--accent-bright)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
         >
           <ExternalLink className="h-4 w-4" aria-hidden />
           {t(locale, "Open official source", "فتح المصدر الرسمي")}

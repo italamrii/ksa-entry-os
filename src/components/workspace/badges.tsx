@@ -17,7 +17,7 @@ export function VerificationBadge({ locale, state }: { locale: Locale; state: Ve
 export function ProfessionalReviewBadge({ locale, state }: { locale: Locale; state: VerificationState }) {
   if (!state.requiresProfessionalReview) return null;
   return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300">
+    <span className="inline-flex items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--plum)_35%,transparent)] bg-[color-mix(in_srgb,var(--plum)_14%,transparent)] px-2 py-0.5 text-xs font-medium text-[color-mix(in_srgb,var(--warm-sand)_80%,var(--plum))]">
       <Scale className="h-3.5 w-3.5" aria-hidden />
       {t(locale, "Professional review recommended", "يوصى بمراجعة مهنية")}
     </span>
@@ -25,9 +25,9 @@ export function ProfessionalReviewBadge({ locale, state }: { locale: Locale; sta
 }
 
 const FRESHNESS: Record<FreshnessState, { en: string; ar: string; className: string; Icon: React.ComponentType<{ className?: string }> }> = {
-  FRESH: { en: "Verified", ar: "محقق", className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", Icon: CircleCheck },
-  REVIEW_DUE: { en: "Review due", ar: "المراجعة مستحقة", className: "border-amber-500/30 bg-amber-500/10 text-amber-300", Icon: Clock3 },
-  STALE: { en: "Outdated — re-verify", ar: "قديم — أعد التحقق", className: "border-red-500/30 bg-red-500/10 text-red-300", Icon: CircleAlert },
+  FRESH: { en: "Verified", ar: "محقق", className: "border-[color-mix(in_srgb,var(--success)_30%,transparent)] bg-[color-mix(in_srgb,var(--success)_10%,transparent)] text-[var(--success)]", Icon: CircleCheck },
+  REVIEW_DUE: { en: "Review due", ar: "المراجعة مستحقة", className: "border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] text-[var(--warning)]", Icon: Clock3 },
+  STALE: { en: "Outdated — re-verify", ar: "قديم — أعد التحقق", className: "border-[color-mix(in_srgb,var(--error)_30%,transparent)] bg-[color-mix(in_srgb,var(--error)_10%,transparent)] text-[var(--error)]", Icon: CircleAlert },
   MISSING: { en: "No source", ar: "لا مصدر", className: "border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--muted)]", Icon: CircleHelp },
 };
 
@@ -58,7 +58,7 @@ export function PlanningIndicator({ locale, planning }: { locale: Locale; planni
         aria-valuemax={100}
         aria-label={t(locale, "Planning indicator", "مؤشر التخطيط")}
       >
-        <div className="h-full rounded-full bg-emerald-500" style={{ width: `${pct}%` }} />
+        <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
       </div>
       <p className="mt-1 text-xs text-[var(--muted)]">{planning.label}</p>
     </div>

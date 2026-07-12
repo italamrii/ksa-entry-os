@@ -36,13 +36,13 @@ export function DashboardNav({
             key={link.href}
             href={link.href}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium transition",
+              "flex items-center gap-3 rounded-[var(--radius-md)] px-3.5 py-2.5 text-sm font-medium transition outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]",
               active
-                ? "bg-teal-500/10 text-teal-400 ring-1 ring-teal-500/20"
+                ? "bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent-bright)] ring-1 ring-[color-mix(in_srgb,var(--accent)_22%,transparent)]"
                 : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-foreground"
             )}
           >
-            <Icon className="h-4 w-4 shrink-0" />
+            <Icon className="h-4 w-4 shrink-0" aria-hidden />
             {t(locale, link.labelEn, link.labelAr)}
           </Link>
         );
@@ -66,7 +66,7 @@ export function DashboardShell({
   return (
     <div dir={dir} className="mx-auto flex max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <aside className="hidden w-60 shrink-0 lg:block">
-        <div className="surface-panel sticky top-24 rounded-2xl p-3">
+        <div className="surface-panel sticky top-24 rounded-[var(--radius-lg)] p-3">
           <DashboardNav locale={locale} isAdmin={isAdmin} currentPath={currentPath} />
         </div>
       </aside>

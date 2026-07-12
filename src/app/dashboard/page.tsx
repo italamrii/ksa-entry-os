@@ -62,7 +62,7 @@ export default async function DashboardPage() {
       <DashboardShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/dashboard">
         <div className="space-y-8">
           <div className="surface-panel rounded-2xl p-6 lg:p-8">
-            <p className="text-overline text-teal-400">{D.overline}</p>
+            <p className="text-overline">{D.overline}</p>
             <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div>
                 <h1 className="text-headline text-foreground">{D.welcome}</h1>
@@ -87,7 +87,7 @@ export default async function DashboardPage() {
               meta={[{ label: D.roadmapSteps, value: latestAssessment ? String(latestAssessment._count.steps) : "—" }]}
               footer={
                 latestAssessment ? (
-                  <Link href={`/assessment/${latestAssessment.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-teal-400">
+                  <Link href={`/assessment/${latestAssessment.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
                     {D.viewRoadmap} <Arrow className="h-3.5 w-3.5" />
                   </Link>
                 ) : (
@@ -102,7 +102,7 @@ export default async function DashboardPage() {
               footer={
                 <div>
                   <div className="mb-2 h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
-                    <div className="h-full rounded-full bg-gradient-to-r from-teal-500 to-cyan-500" style={{ width: `${progressPct}%` }} />
+                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-amber-500" style={{ width: `${progressPct}%` }} />
                   </div>
                   <p className="text-xs text-[var(--muted)]">{progressPct}%</p>
                 </div>
@@ -114,7 +114,7 @@ export default async function DashboardPage() {
               className="hover-lift"
               meta={[{ label: D.activeReports, value: String(activeRequests.length) }]}
               footer={
-                <Link href="/requests" className="inline-flex items-center gap-1 text-sm font-medium text-teal-400">
+                <Link href="/requests" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
                   {D.viewReports} <Arrow className="h-3.5 w-3.5" />
                 </Link>
               }
@@ -137,9 +137,9 @@ export default async function DashboardPage() {
           </div>
 
           {!latestAssessment && (
-            <div className="surface-panel rounded-2xl border border-teal-500/20 bg-teal-500/5 p-6">
+            <div className="surface-panel rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
               <div className="flex items-start gap-4">
-                <Compass className="h-8 w-8 shrink-0 text-teal-400" />
+                <Compass className="h-8 w-8 shrink-0 text-emerald-400" />
                 <div>
                   <h2 className="font-semibold text-foreground">{D.nextAction}</h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">{D.nextActionDesc}</p>
@@ -165,14 +165,14 @@ export default async function DashboardPage() {
                     href={action.href}
                     className="surface-elevated hover-lift flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-foreground"
                   >
-                    <action.icon className="h-4 w-4 text-teal-400" />
+                    <action.icon className="h-4 w-4 text-emerald-400" />
                     {action.label}
                   </Link>
                 ))}
                 {latestAssessment && hasPaid && (
                   <a
                     href={`/api/assessments/${latestAssessment.id}/pdf`}
-                    className="surface-elevated hover-lift flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-teal-400"
+                    className="surface-elevated hover-lift flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-emerald-400"
                   >
                     <Download className="h-4 w-4" />
                     {D.downloadReport}
@@ -184,7 +184,7 @@ export default async function DashboardPage() {
             <div className="space-y-6 lg:col-span-2">
               <div className="surface-panel rounded-2xl p-6">
                 <div className="mb-4 flex items-center gap-2">
-                  <Activity className="h-4 w-4 text-teal-400" />
+                  <Activity className="h-4 w-4 text-emerald-400" />
                   <h2 className="text-sm font-semibold text-foreground">{D.recentActivity}</h2>
                 </div>
                 {assessmentCount === 0 ? (
@@ -205,7 +205,7 @@ export default async function DashboardPage() {
                       </div>
                     )}
                     {hasPaid && (
-                      <div className="flex items-center gap-2 rounded-xl border border-teal-500/20 bg-teal-500/5 px-4 py-3 text-sm text-teal-300">
+                      <div className="flex items-center gap-2 rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-300">
                         <CheckCircle2 className="h-4 w-4" />
                         {D.reportReady}
                       </div>
@@ -216,7 +216,7 @@ export default async function DashboardPage() {
 
               <div className="surface-panel rounded-2xl p-6">
                 <div className="mb-3 flex items-center gap-2">
-                  <Link2 className="h-4 w-4 text-cyan-400" />
+                  <Link2 className="h-4 w-4 text-amber-400" />
                   <h2 className="text-sm font-semibold text-foreground">{D.linkCoverage}</h2>
                 </div>
                 <p className="text-sm text-[var(--muted)]">

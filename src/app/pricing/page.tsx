@@ -58,7 +58,7 @@ export default async function PricingPage({
                         <ul className="mb-6 space-y-3">
                           {features.map((f) => (
                             <li key={f} className="flex items-start gap-2.5 text-sm text-[var(--muted)]">
-                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
+                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                               {f}
                             </li>
                           ))}

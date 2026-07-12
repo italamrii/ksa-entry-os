@@ -73,8 +73,8 @@ export default async function AssessmentResultPage({
           </div>
 
           {!hasPaid && (
-            <div className="rounded-xl border border-teal-500/25 bg-teal-500/5 px-4 py-3">
-              <p className="text-sm text-teal-200/90">{A.previewNote}</p>
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-4 py-3">
+              <p className="text-sm text-emerald-200/90">{A.previewNote}</p>
             </div>
           )}
 
@@ -83,7 +83,7 @@ export default async function AssessmentResultPage({
               <RoadmapStepCard key={step.id} step={step} index={i} locale={locale} />
             ))}
             {!hasPaid && steps.length > previewLimit && (
-              <div className="surface-elevated rounded-2xl border border-dashed border-teal-500/20 p-8 text-center">
+              <div className="surface-elevated rounded-2xl border border-dashed border-emerald-500/20 p-8 text-center">
                 <Lock className="mx-auto h-8 w-8 text-[var(--muted)]" />
                 <p className="mt-3 font-medium text-foreground">
                   {steps.length - previewLimit} {A.lockedNote}

@@ -5,7 +5,7 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn("surface-elevated rounded-2xl text-foreground", className)}
+      className={cn("surface-elevated rounded-[var(--radius-lg)] text-foreground", className)}
       {...props}
     />
   )

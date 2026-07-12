@@ -47,7 +47,7 @@ export function SectionHeader({
       )}
     >
       {overline && (
-        <p className="text-overline mb-3 text-teal-400/90">{overline}</p>
+        <p className="text-overline mb-3">{overline}</p>
       )}
       <h2 className="text-headline text-foreground">{title}</h2>
       {subtitle && (

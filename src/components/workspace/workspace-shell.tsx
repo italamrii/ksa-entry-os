@@ -49,7 +49,7 @@ export function WorkspaceShell({ vm, assessmentId, canExport }: { vm: WorkspaceV
   return (
     <div dir={dir} className="mx-auto flex w-full min-w-0 max-w-7xl gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <aside className="hidden w-56 shrink-0 lg:block" aria-label={t(locale, "Workspace sections", "أقسام مساحة العمل")}>
-        <nav className="surface-panel sticky top-24 rounded-2xl p-3">
+        <nav className="surface-panel sticky top-24 rounded-[var(--radius-lg)] p-3">
           <ul className="flex flex-col gap-0.5">
             {SECTIONS.map((s) => (
               <li key={s.id}>
@@ -57,8 +57,10 @@ export function WorkspaceShell({ vm, assessmentId, canExport }: { vm: WorkspaceV
                   href={`#${s.id}`}
                   aria-current={current === s.id ? "true" : undefined}
                   onClick={() => setCurrent(s.id)}
-                  className={`block rounded-lg px-3 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-emerald-500/50 ${
-                    current === s.id ? "bg-emerald-500/10 text-emerald-300" : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-foreground"
+                  className={`block rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)] ${
+                    current === s.id
+                      ? "bg-[color-mix(in_srgb,var(--accent)_12%,transparent)] text-[var(--accent-bright)]"
+                      : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-foreground"
                   }`}
                 >
                   {t(locale, s.en, s.ar)}

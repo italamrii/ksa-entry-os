@@ -29,20 +29,20 @@ export function PremiumCard({
     <div
       className={cn(
         "surface-elevated group relative rounded-2xl p-6 transition-all duration-300",
-        variant === "featured" && "ring-1 ring-teal-500/30",
+        variant === "featured" && "ring-1 ring-emerald-500/30",
         variant === "compact" && "p-5",
         className
       )}
     >
       {badge && (
-        <span className="absolute -top-3 start-6 rounded-full bg-teal-500/15 px-3 py-1 text-xs font-semibold text-teal-400 ring-1 ring-teal-500/25">
+        <span className="absolute -top-3 start-6 rounded-full bg-emerald-500/15 px-3 py-1 text-xs font-semibold text-emerald-400 ring-1 ring-emerald-500/25">
           {badge}
         </span>
       )}
       <div className="flex items-start gap-4">
         {Icon && (
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-teal-500/10 ring-1 ring-teal-500/20 transition group-hover:bg-teal-500/15">
-            <Icon className="h-5 w-5 text-teal-400" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 ring-1 ring-emerald-500/20 transition group-hover:bg-emerald-500/15">
+            <Icon className="h-5 w-5 text-emerald-400" />
           </div>
         )}
         <div className="min-w-0 flex-1">

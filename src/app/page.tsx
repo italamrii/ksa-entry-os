@@ -47,7 +47,7 @@ export default async function HomePage({
       <section className="hero-mesh relative overflow-hidden px-4 pb-8 pt-12 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
         <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
-            <p className="text-overline mb-4 text-teal-400">{L.hero.overline}</p>
+            <p className="text-overline mb-4">{L.hero.overline}</p>
             <h1 className="text-display text-foreground">{L.hero.title}</h1>
             <p className="text-subhead mt-6 text-[var(--muted)]">{L.hero.subtitle}</p>
             <p className="mt-4 text-sm text-[var(--muted)]/80">{L.hero.audience}</p>
@@ -75,7 +75,7 @@ export default async function HomePage({
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-3">
           {L.trustStrip.map((badge) => (
             <span key={badge} className="trust-badge">
-              <CheckCircle2 className="h-3.5 w-3.5 text-teal-500/80" />
+              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500/80" />
               {badge}
             </span>
           ))}
@@ -202,7 +202,7 @@ export default async function HomePage({
                       <ul className="mb-5 space-y-2">
                         {features.map((f) => (
                           <li key={f} className="flex items-start gap-2 text-sm text-[var(--muted)]">
-                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-teal-400" />
+                            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
                             {f}
                           </li>
                         ))}
@@ -240,7 +240,7 @@ export default async function HomePage({
       <Section variant="bordered" className="!pb-20">
         <Reveal>
           <div className="surface-panel relative overflow-hidden rounded-3xl p-8 text-center lg:p-14">
-            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/8 via-transparent to-cyan-500/8" />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/8 via-transparent to-amber-500/8" />
             <div className="relative">
               <h2 className="text-headline text-foreground">{L.cta.title}</h2>
               <p className="text-subhead mx-auto mt-4 max-w-2xl text-[var(--muted)]">{L.cta.subtitle}</p>

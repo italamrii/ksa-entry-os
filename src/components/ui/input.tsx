@@ -3,12 +3,16 @@ import { cn } from "@/lib/utils";
 
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
+const fieldFocus =
+  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_35%,transparent)]";
+
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
   ({ className, type, ...props }, ref) => (
     <input
       type={type}
       className={cn(
-        "flex h-11 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-2 text-sm text-foreground placeholder:text-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30 disabled:cursor-not-allowed disabled:opacity-50",
+        "flex h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-2 text-sm text-foreground placeholder:text-[var(--muted)] disabled:cursor-not-allowed disabled:opacity-45",
+        fieldFocus,
         className
       )}
       ref={ref}
@@ -29,7 +33,8 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTML
   ({ className, ...props }, ref) => (
     <textarea
       className={cn(
-        "flex min-h-[100px] w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-3 text-sm text-foreground placeholder:text-[var(--muted)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30",
+        "flex min-h-[100px] w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-3 text-sm text-foreground placeholder:text-[var(--muted)]",
+        fieldFocus,
         className
       )}
       ref={ref}
@@ -43,7 +48,8 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
   ({ className, children, ...props }, ref) => (
     <select
       className={cn(
-        "flex h-11 w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/30",
+        "flex h-11 w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--card)] px-4 py-2 text-sm text-foreground",
+        fieldFocus,
         className
       )}
       ref={ref}
@@ -57,10 +63,10 @@ Select.displayName = "Select";
 
 const badgeVariants = {
   default: "bg-[var(--surface-muted)] text-[var(--muted)] border-[var(--border-subtle)]",
-  success: "bg-teal-500/10 text-teal-400 border-teal-500/25",
-  warning: "bg-amber-500/10 text-amber-400 border-amber-500/25",
-  danger: "bg-red-500/10 text-red-400 border-red-500/25",
-  info: "bg-cyan-500/10 text-cyan-400 border-cyan-500/25",
+  success: "bg-[color-mix(in_srgb,var(--success)_12%,transparent)] text-[var(--success)] border-[color-mix(in_srgb,var(--success)_28%,transparent)]",
+  warning: "bg-[color-mix(in_srgb,var(--warning)_12%,transparent)] text-[var(--warning)] border-[color-mix(in_srgb,var(--warning)_28%,transparent)]",
+  danger: "bg-[color-mix(in_srgb,var(--error)_12%,transparent)] text-[var(--error)] border-[color-mix(in_srgb,var(--error)_28%,transparent)]",
+  info: "bg-[color-mix(in_srgb,var(--info)_12%,transparent)] text-[var(--info)] border-[color-mix(in_srgb,var(--info)_28%,transparent)]",
 };
 
 export const Badge = ({
@@ -70,7 +76,7 @@ export const Badge = ({
 }: React.HTMLAttributes<HTMLSpanElement> & { variant?: keyof typeof badgeVariants }) => (
   <span
     className={cn(
-      "inline-flex items-center rounded-lg border px-2.5 py-0.5 text-xs font-semibold tracking-wide",
+      "inline-flex items-center rounded-[var(--radius-sm)] border px-2.5 py-0.5 text-xs font-semibold tracking-wide",
       badgeVariants[variant],
       className
     )}
@@ -79,5 +85,5 @@ export const Badge = ({
 );
 
 export const Skeleton = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("animate-pulse rounded-xl bg-[var(--surface-muted)]", className)} {...props} />
+  <div className={cn("animate-pulse rounded-[var(--radius-md)] bg-[var(--surface-muted)]", className)} {...props} />
 );

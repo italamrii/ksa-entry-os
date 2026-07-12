@@ -17,14 +17,14 @@ export function HeroPreview({ locale }: { locale: Locale }) {
 
   return (
     <div className="relative mx-auto w-full max-w-xl lg:max-w-none animate-fade-in">
-      <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-teal-500/15 via-cyan-500/5 to-transparent blur-3xl" />
+      <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-[color-mix(in_srgb,var(--accent)_18%,transparent)] via-[color-mix(in_srgb,var(--highlight)_8%,transparent)] to-transparent blur-3xl" />
       <div className="relative space-y-3">
         {/* Executive summary — top card */}
-        <div className="ui-preview-block border-teal-500/20 p-4 shadow-2xl ring-1 ring-teal-500/10">
+        <div className="ui-preview-block border-emerald-500/20 p-4 shadow-2xl ring-1 ring-emerald-500/10">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/15">
-                <FileText className="h-4 w-4 text-teal-400" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
+                <FileText className="h-4 w-4 text-emerald-400" />
               </div>
               <div>
                 <span className="block text-xs font-semibold text-slate-200">{p.report}</span>
@@ -42,7 +42,7 @@ export function HeroPreview({ locale }: { locale: Locale }) {
               { v: "3", l: isAr ? "تنبيهات" : "Alerts" },
             ].map((stat) => (
               <div key={stat.l} className="rounded-lg bg-slate-900/50 py-2">
-                <p className="text-lg font-bold text-teal-400">{stat.v}</p>
+                <p className="text-lg font-bold text-emerald-400">{stat.v}</p>
                 <p className="text-[10px] text-slate-500">{stat.l}</p>
               </div>
             ))}
@@ -53,13 +53,13 @@ export function HeroPreview({ locale }: { locale: Locale }) {
         <div className="ui-preview-block p-4">
           <div className="mb-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Map className="h-4 w-4 text-teal-400" />
+              <Map className="h-4 w-4 text-emerald-400" />
               <span className="text-xs font-semibold text-slate-200">{p.roadmap}</span>
             </div>
-            <span className="text-[10px] text-teal-400/80">72% {isAr ? "مكتمل" : "mapped"}</span>
+            <span className="text-[10px] text-emerald-400/80">72% {isAr ? "مكتمل" : "mapped"}</span>
           </div>
           <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
-            <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-teal-500 to-cyan-400 animate-progress" />
+            <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-emerald-500 to-amber-400 animate-progress" />
           </div>
           <div className="space-y-2">
             {[
@@ -69,14 +69,14 @@ export function HeroPreview({ locale }: { locale: Locale }) {
             ].map((step) => (
               <div
                 key={step.n}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${step.active ? "bg-teal-500/10 ring-1 ring-teal-500/20" : "bg-slate-900/40"}`}
+                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${step.active ? "bg-emerald-500/10 ring-1 ring-emerald-500/20" : "bg-slate-900/40"}`}
               >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${step.active ? "bg-teal-500/25 text-teal-300" : "bg-slate-800 text-slate-500"}`}>
+                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${step.active ? "bg-emerald-500/25 text-emerald-300" : "bg-slate-800 text-slate-500"}`}>
                   {step.n}
                 </span>
                 <span className="flex-1 text-xs text-slate-300">{step.label}</span>
                 {step.active ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-teal-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
                 ) : (
                   <span className="h-2 w-2 rounded-full bg-slate-600" />
                 )}
@@ -89,7 +89,7 @@ export function HeroPreview({ locale }: { locale: Locale }) {
           {/* Authority map */}
           <div className="ui-preview-block p-3">
             <div className="mb-2 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-cyan-400" />
+              <Building2 className="h-3.5 w-3.5 text-amber-400" />
               <span className="text-[10px] font-semibold text-slate-300">
                 {isAr ? "خريطة الجهات" : "Authority map"}
               </span>
@@ -98,7 +98,7 @@ export function HeroPreview({ locale }: { locale: Locale }) {
               {["MISA", "SBC", "ZATCA"].map((auth) => (
                 <div key={auth} className="flex items-center justify-between text-[10px]">
                   <span className="text-slate-400">{auth}</span>
-                  <ArrowUpRight className="h-3 w-3 text-teal-500/70" />
+                  <ArrowUpRight className="h-3 w-3 text-emerald-500/70" />
                 </div>
               ))}
             </div>

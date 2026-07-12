@@ -9,15 +9,15 @@ export function JourneyTimeline({ locale }: { locale: Locale }) {
 
   return (
     <div className="relative">
-      <div className="absolute start-5 top-0 hidden h-full w-px bg-gradient-to-b from-teal-500/50 via-teal-500/20 to-transparent sm:block" />
+      <div className="absolute start-5 top-0 hidden h-full w-px bg-gradient-to-b from-emerald-500/50 via-emerald-500/20 to-transparent sm:block" />
       <div className="space-y-4">
         {timeline.map((item, i) => (
           <div
             key={item.title}
-            className="group relative flex gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card)]/80 p-5 transition-all duration-300 hover:border-teal-500/30 hover:shadow-lg hover:shadow-teal-500/5 sm:ps-14"
+            className="group relative flex gap-4 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card)]/80 p-5 transition-all duration-300 hover:border-emerald-500/30 hover:shadow-lg hover:shadow-emerald-500/5 sm:ps-14"
           >
-            <span className="absolute start-3.5 top-6 hidden h-3 w-3 rounded-full border-2 border-teal-400 bg-[var(--background)] sm:block group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(45,212,191,0.4)] transition-transform" />
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-teal-500/10 text-xs font-bold text-teal-400 sm:hidden">
+            <span className="absolute start-3.5 top-6 hidden h-3 w-3 rounded-full border-2 border-emerald-400 bg-[var(--background)] sm:block group-hover:scale-110 group-hover:shadow-[0_0_12px_color-mix(in_srgb,var(--accent)_40%,transparent)] transition-transform" />
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-xs font-bold text-emerald-400 sm:hidden">
               {i + 1}
             </div>
             <div className="min-w-0 flex-1">
@@ -38,7 +38,7 @@ export function JourneyTimeline({ locale }: { locale: Locale }) {
                   <span className="text-foreground/70">{item.applies}</span>
                 </span>
               </div>
-              <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-teal-400">
+              <div className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-emerald-400">
                 <Link2 className="h-3 w-3" />
                 {item.linkStatus}
               </div>
@@ -46,7 +46,7 @@ export function JourneyTimeline({ locale }: { locale: Locale }) {
           </div>
         ))}
       </div>
-      <p className="mt-6 text-center text-sm font-medium text-teal-400/90">{L.roadmapPreview.subtitle}</p>
+      <p className="mt-6 text-center text-sm font-medium text-emerald-400/90">{L.roadmapPreview.subtitle}</p>
     </div>
   );
 }

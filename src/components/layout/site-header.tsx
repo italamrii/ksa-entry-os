@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
+import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import type { Locale } from "@/lib/i18n";
 import { nav, t } from "@/lib/i18n";
 import { localeHref } from "@/lib/i18n/locale-utils";
@@ -19,7 +20,7 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
   const navLink = (href: string, label: string) => (
     <Link
       href={localeHref(href, locale)}
-      className="text-sm font-medium text-[var(--muted)] transition hover:text-foreground"
+      className="text-sm font-medium text-[var(--muted)] transition hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
     >
       {label}
     </Link>
@@ -28,19 +29,13 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
   return (
     <header
       dir={dir}
-      className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--background)]/85 backdrop-blur-xl"
+      className="sticky top-0 z-50 border-b border-[var(--border-subtle)] bg-[var(--glass)] backdrop-blur-xl"
     >
       <div className="mx-auto flex h-[4.25rem] max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <Link href={localeHref("/", locale)} className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-teal-500 to-cyan-600 text-xs font-bold text-white shadow-lg shadow-teal-600/20">
-            KSA
-          </div>
-          <div className="hidden sm:block">
-            <span className="block text-sm font-semibold text-foreground">{APP_NAME}</span>
-            <span className="block text-[10px] text-[var(--muted)]">
-              {t(locale, "Market Entry Intelligence", "ذكاء دخول السوق")}
-            </span>
-          </div>
+        <Link href={localeHref("/", locale)} className="rounded-[var(--radius-sm)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]">
+          <LogoLockup
+            tagline={t(locale, "Market Entry Intelligence", "ذكاء دخول السوق")}
+          />
         </Link>
 
         <nav className="hidden items-center gap-8 md:flex">
@@ -58,20 +53,24 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
           <Link
             href={locale === "ar" ? localeHref("/", "en") : localeHref("/", "ar")}
             className={cn(
-              "rounded-lg px-2.5 py-1.5 text-xs font-semibold transition",
-              "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-teal-400"
+              "rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-semibold transition",
+              "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--highlight)]"
             )}
           >
             {locale === "ar" ? "EN" : "عربي"}
           </Link>
           {isAuthenticated ? (
             <form action="/api/auth/logout" method="POST">
-              <Button type="submit" variant="ghost" size="sm">{n.logout}</Button>
+              <Button type="submit" variant="ghost" size="sm">
+                {n.logout}
+              </Button>
             </form>
           ) : (
             <>
               <Link href={localeHref("/login", locale)}>
-                <Button variant="ghost" size="sm">{n.login}</Button>
+                <Button variant="ghost" size="sm">
+                  {n.login}
+                </Button>
               </Link>
               <Link href={localeHref("/register", locale)}>
                 <Button size="sm">{n.register}</Button>
@@ -86,12 +85,16 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
 
 export function SiteFooter({ locale = "en" }: { locale?: Locale }) {
   const dir = locale === "ar" ? "rtl" : "ltr";
+  const linkClass = "hover:text-[var(--highlight)] transition";
   return (
     <footer dir={dir} className="border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/30">
       <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
         <div className="grid gap-10 md:grid-cols-4">
           <div className="md:col-span-2">
-            <p className="font-semibold text-foreground">{APP_NAME}</p>
+            <div className="flex items-center gap-3">
+              <LogoMark className="h-9 w-9" />
+              <p className="font-semibold text-foreground">{APP_NAME}</p>
+            </div>
             <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
               {t(
                 locale,
@@ -105,10 +108,26 @@ export function SiteFooter({ locale = "en" }: { locale?: Locale }) {
               {t(locale, "Legal", "قانوني")}
             </p>
             <ul className="space-y-2.5 text-sm text-[var(--muted)]">
-              <li><Link href={localeHref("/legal/terms", locale)} className="hover:text-teal-400">{t(locale, "Terms of Use", "شروط الاستخدام")}</Link></li>
-              <li><Link href={localeHref("/legal/privacy", locale)} className="hover:text-teal-400">{t(locale, "Privacy Policy", "سياسة الخصوصية")}</Link></li>
-              <li><Link href={localeHref("/legal/disclaimer", locale)} className="hover:text-teal-400">{t(locale, "Disclaimer", "إخلاء المسؤولية")}</Link></li>
-              <li><Link href={localeHref("/legal/data-deletion", locale)} className="hover:text-teal-400">{t(locale, "Data Deletion", "حذف البيانات")}</Link></li>
+              <li>
+                <Link href={localeHref("/legal/terms", locale)} className={linkClass}>
+                  {t(locale, "Terms of Use", "شروط الاستخدام")}
+                </Link>
+              </li>
+              <li>
+                <Link href={localeHref("/legal/privacy", locale)} className={linkClass}>
+                  {t(locale, "Privacy Policy", "سياسة الخصوصية")}
+                </Link>
+              </li>
+              <li>
+                <Link href={localeHref("/legal/disclaimer", locale)} className={linkClass}>
+                  {t(locale, "Disclaimer", "إخلاء المسؤولية")}
+                </Link>
+              </li>
+              <li>
+                <Link href={localeHref("/legal/data-deletion", locale)} className={linkClass}>
+                  {t(locale, "Data Deletion", "حذف البيانات")}
+                </Link>
+              </li>
             </ul>
           </div>
           <div>
@@ -116,20 +135,27 @@ export function SiteFooter({ locale = "en" }: { locale?: Locale }) {
               {t(locale, "Platform", "المنصة")}
             </p>
             <ul className="space-y-2.5 text-sm text-[var(--muted)]">
-              <li><Link href={localeHref("/pricing", locale)} className="hover:text-teal-400">{t(locale, "Pricing", "الأسعار")}</Link></li>
-              <li><Link href={localeHref("/register", locale)} className="hover:text-teal-400">{t(locale, "Get Started", "ابدأ الآن")}</Link></li>
+              <li>
+                <Link href={localeHref("/pricing", locale)} className={linkClass}>
+                  {t(locale, "Pricing", "الأسعار")}
+                </Link>
+              </li>
+              <li>
+                <Link href={localeHref("/register", locale)} className={linkClass}>
+                  {t(locale, "Get Started", "ابدأ الآن")}
+                </Link>
+              </li>
             </ul>
           </div>
         </div>
-        <div className="mt-10 border-t border-[var(--border-subtle)] pt-8">
-          <p className="text-xs leading-relaxed text-[var(--muted)]">
-            {t(
-              locale,
-              "Not a government entity, law firm, or tax advisor. General guidance from public official sources only.",
-              "ليست جهة حكومية ولا مكتب محاماة ولا مستشارًا ضريبيًا. إرشادات عامة من مصادر رسمية متاحة فقط."
-            )}
-          </p>
-        </div>
+        <p className="mt-10 text-xs text-[var(--muted)]">
+          © {new Date().getFullYear()} {APP_NAME}.{" "}
+          {t(
+            locale,
+            "Not a government entity. Not legal, tax, or licensed advisory advice.",
+            "ليست جهة حكومية. لا تُعد استشارة قانونية أو ضريبية أو مرخّصة."
+          )}
+        </p>
       </div>
     </footer>
   );
@@ -137,14 +163,12 @@ export function SiteFooter({ locale = "en" }: { locale?: Locale }) {
 
 export function DisclaimerBanner({ locale = "en" }: { locale?: Locale }) {
   return (
-    <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 px-4 py-3">
-      <p className="text-xs leading-relaxed text-amber-200/90">
-        {t(
-          locale,
-          "General guidance only — not legal, tax, or regulatory advice. Verify with official authorities or licensed advisors.",
-          "إرشادات عامة فقط — ليست استشارة قانونية أو ضريبية أو تنظيمية. يُرجى التحقق من الجهات الرسمية أو المستشارين المرخصين."
-        )}
-      </p>
-    </div>
+    <p className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 px-3 py-2 text-xs leading-relaxed text-[var(--muted)]">
+      {t(
+        locale,
+        "Informational guidance only. Verify all requirements with official authorities or licensed advisors.",
+        "إرشاد معلوماتي فقط. تحقّق من جميع المتطلبات عبر الجهات الرسمية أو المستشارين المرخّصين."
+      )}
+    </p>
   );
 }

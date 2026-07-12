@@ -20,13 +20,13 @@ export function PathwayNode({ locale, pathway, onFocusPathway, onOpenSource, act
   return (
     <article
       aria-current={active ? "true" : undefined}
-      className={`rounded-2xl border p-5 transition ${active ? "border-emerald-500/50 bg-emerald-500/5" : "border-[var(--border-subtle)] bg-[var(--surface-muted)]/20"}`}
+      className={`decision-node rounded-[var(--radius-lg)] p-5 ps-5 ${active ? "is-focused" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <button
           type="button"
           onClick={onFocusPathway ? () => onFocusPathway(pathway.ruleKey) : undefined}
-          className="min-w-0 text-start outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+          className="min-w-0 text-start outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
           aria-label={t(locale, `Focus pathway ${pathway.title}`, `تركيز المسار ${pathway.title}`)}
         >
           <h3 className="truncate text-base font-semibold text-foreground">{pathway.title}</h3>
@@ -67,7 +67,7 @@ export function PathwayNode({ locale, pathway, onFocusPathway, onOpenSource, act
                 type="button"
                 onClick={onOpenSource ? () => onOpenSource(s) : undefined}
                 aria-haspopup="dialog"
-                className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-xs text-foreground outline-none hover:border-emerald-500/40 focus-visible:ring-2 focus-visible:ring-emerald-500/50"
+                className="inline-flex items-center gap-1 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-xs text-foreground outline-none transition hover:border-[color-mix(in_srgb,var(--highlight)_45%,transparent)] hover:text-[var(--highlight)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
               >
                 {t(locale, "Source", "مصدر")}: {s.authority ?? s.title}
               </button>

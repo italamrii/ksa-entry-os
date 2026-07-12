@@ -99,7 +99,7 @@ export function EntryReportCard({
           )}
           {request.status === "IN_REVIEW" && (
             <Link href={`/assessment/${request.assessmentId}`}>
-              <Button variant="ghost" size="sm" className="gap-1 text-teal-400">
+              <Button variant="ghost" size="sm" className="gap-1 text-emerald-400">
                 {R.continueReview} <Arrow className="h-3 w-3" />
               </Button>
             </Link>
@@ -114,8 +114,8 @@ export function EntryReportsEmpty({ locale }: { locale: Locale }) {
   const R = getRequests(locale);
   return (
     <div className="surface-panel rounded-2xl px-8 py-14 text-center">
-      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-teal-500/10 ring-1 ring-teal-500/20">
-        <FileText className="h-7 w-7 text-teal-400" />
+      <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/20">
+        <FileText className="h-7 w-7 text-emerald-400" />
       </div>
       <h3 className="text-lg font-semibold text-foreground">{R.emptyTitle}</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">{R.emptyBody}</p>

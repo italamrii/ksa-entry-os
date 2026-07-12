@@ -26,8 +26,8 @@ export function CompanyContext({ locale, provided, inferred }: { locale: Locale;
 
 function FactColumn({ locale, heading, facts, tone }: { locale: Locale; heading: string; facts: FactVM[]; tone: "provided" | "inferred" }) {
   return (
-    <div className="surface-panel rounded-2xl p-5">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-[var(--muted)]">{heading}</h3>
+    <div className="surface-panel rounded-[var(--radius-lg)] p-5">
+      <h3 className="text-overline">{heading}</h3>
       {facts.length === 0 ? (
         <p className="mt-2 text-sm text-[var(--muted)]">{t(locale, "Nothing yet.", "لا شيء بعد.")}</p>
       ) : (

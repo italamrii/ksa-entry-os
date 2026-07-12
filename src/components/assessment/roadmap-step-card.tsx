@@ -34,7 +34,7 @@ export function RoadmapStepCard({ step, index, locale, locked }: StepProps) {
     <div className={`surface-elevated rounded-2xl p-6 ${locked ? "opacity-50" : ""}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-4">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-sm font-bold text-teal-400 ring-1 ring-teal-500/20">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-500/15 text-sm font-bold text-emerald-400 ring-1 ring-emerald-500/20">
             {index + 1}
           </span>
           <div>
@@ -73,7 +73,7 @@ export function RoadmapStepCard({ step, index, locale, locked }: StepProps) {
           href={step.officialUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-teal-400 hover:text-teal-300"
+          className="mt-4 inline-flex items-center gap-1.5 text-sm font-medium text-emerald-400 hover:text-emerald-300"
         >
           <ExternalLink className="h-3.5 w-3.5" />
           {t(locale, "Official link", "الرابط الرسمي")}
