@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { loginSchema, type LoginInput } from "@/lib/validation/schemas";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader } from "@/components/layout/site-header";
 import { toast } from "sonner";
 import { APP_NAME } from "@/lib/constants";
@@ -44,15 +43,16 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="auth-stage flex min-h-screen flex-col">
       <SiteHeader />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Log in to {APP_NAME}</CardTitle>
-            <CardDescription>Enter your credentials to access your dashboard</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="surface-panel w-full max-w-md overflow-hidden rounded-[var(--radius-lg)]">
+          <div className="border-b border-[var(--border-subtle)] px-6 py-5">
+            <p className="text-overline">KSA Entry OS</p>
+            <h1 className="font-display mt-1 text-xl font-semibold text-foreground">Log in to {APP_NAME}</h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">Enter your credentials to open your decision workspace</p>
+          </div>
+          <div className="px-6 py-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div>
                 <Label htmlFor="email">Email</Label>
@@ -68,12 +68,14 @@ export default function LoginPage() {
                 {loading ? "Signing in..." : "Sign in"}
               </Button>
             </form>
-            <p className="mt-4 text-center text-sm text-slate-400">
+            <p className="mt-4 text-center text-sm text-[var(--muted)]">
               Don&apos;t have an account?{" "}
-              <Link href="/register" className="text-emerald-400 hover:underline">Register</Link>
+              <Link href="/register" className="text-[var(--accent-bright)] hover:underline">
+                Register
+              </Link>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

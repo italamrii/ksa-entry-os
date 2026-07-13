@@ -6,7 +6,6 @@ import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -55,10 +54,17 @@ export default function SettingsPage() {
       <SiteHeader isAuthenticated />
       <DashboardShell locale="en" currentPath="/settings">
         <div className="mx-auto max-w-lg space-y-6">
-          <h1 className="text-2xl font-bold text-white">Account Settings</h1>
-          <Card>
-            <CardHeader><CardTitle>Profile</CardTitle></CardHeader>
-            <CardContent>
+          <div>
+            <p className="text-overline">Account</p>
+            <h1 className="font-display mt-1 text-2xl font-semibold text-foreground">Settings</h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">Profile and language for your decision workspace</p>
+          </div>
+
+          <section className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
+            <div className="border-b border-[var(--border-subtle)] px-5 py-4">
+              <h2 className="text-sm font-semibold text-foreground">Profile</h2>
+            </div>
+            <div className="px-5 py-5">
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <Label htmlFor="name">Name</Label>
@@ -73,15 +79,18 @@ export default function SettingsPage() {
                 </div>
                 <Button type="submit" disabled={loading}>{loading ? "Saving..." : "Save changes"}</Button>
               </form>
-            </CardContent>
-          </Card>
-          <Card className="border-red-500/20">
-            <CardHeader><CardTitle className="text-red-400">Danger zone</CardTitle></CardHeader>
-            <CardContent>
-              <p className="text-sm text-slate-400 mb-4">Request deletion of your account and associated data.</p>
-              <Button variant="destructive" onClick={requestDeletion}>Request data deletion</Button>
-            </CardContent>
-          </Card>
+            </div>
+          </section>
+
+          <section className="surface-strip rounded-[var(--radius-md)] border border-[color-mix(in_srgb,var(--error)_28%,transparent)]">
+            <h2 className="text-sm font-semibold text-[var(--error)]">Danger zone</h2>
+            <p className="mt-2 text-sm text-[var(--muted)]">
+              Request deletion of your account and associated data.
+            </p>
+            <Button variant="destructive" className="mt-4" onClick={requestDeletion}>
+              Request data deletion
+            </Button>
+          </section>
         </div>
       </DashboardShell>
     </div>

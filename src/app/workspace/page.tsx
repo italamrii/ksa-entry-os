@@ -7,6 +7,7 @@ import { buildWorkspaceViewModel } from "@/lib/view-models/adapters";
 import type { EvaluationViewInput, Locale, WorkspaceContext } from "@/lib/view-models/types";
 import { WorkspaceShell } from "@/components/workspace/workspace-shell";
 import { NoAssessmentState, ErrorState } from "@/components/workspace/states";
+import { AppShell } from "@/components/layout/app-shell";
 
 export const runtime = "nodejs";
 
@@ -25,7 +26,11 @@ export default async function WorkspacePage() {
   };
 
   const [assessment, paidPayment] = await Promise.all([
-    prisma.assessment.findFirst({ where: { userId: user.id }, orderBy: { createdAt: "desc" }, select: { id: true } }),
+    prisma.assessment.findFirst({
+      where: { userId: user.id },
+      orderBy: { createdAt: "desc" },
+      select: { id: true },
+    }),
     prisma.payment.findFirst({ where: { userId: user.id, status: "PAID" }, select: { id: true } }),
   ]);
   context.hasAssessment = Boolean(assessment);
@@ -34,7 +39,6 @@ export default async function WorkspacePage() {
   let evaluationFailed = false;
   if (assessment) {
     try {
-      // Idempotent: reuses the latest result unless facts/ruleset/governance changed.
       const { result } = await evaluateAssessment({ id: user.id }, assessment.id);
       const view = await buildEvaluationView(result);
       vm = buildWorkspaceViewModel(view as unknown as EvaluationViewInput, context, locale);
@@ -46,18 +50,29 @@ export default async function WorkspacePage() {
   let body: React.ReactNode;
   if (!assessment) {
     body = (
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <NoAssessmentState locale={locale} />
-      </div>
+      <AppShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/workspace" companyName={user.companyName}>
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          <NoAssessmentState locale={locale} />
+        </div>
+      </AppShell>
     );
   } else if (evaluationFailed || !vm) {
     body = (
-      <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
-        <ErrorState locale={locale} />
-      </div>
+      <AppShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/workspace" companyName={user.companyName}>
+        <div className="mx-auto max-w-3xl px-4 py-10 sm:px-6">
+          <ErrorState locale={locale} />
+        </div>
+      </AppShell>
     );
   } else {
-    body = <WorkspaceShell vm={vm} assessmentId={assessment.id} canExport={Boolean(paidPayment)} />;
+    body = (
+      <WorkspaceShell
+        vm={vm}
+        assessmentId={assessment.id}
+        canExport={Boolean(paidPayment)}
+        isAdmin={user.role === "ADMIN"}
+      />
+    );
   }
 
   return (

@@ -18,7 +18,6 @@ import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
 import { Button } from "@/components/ui/button";
-import { PremiumCard } from "@/components/marketing/premium-card";
 import { Badge } from "@/components/ui/input";
 import { getDashboard } from "@/lib/i18n/content";
 import { formatDate } from "@/lib/utils";
@@ -59,7 +58,7 @@ export default async function DashboardPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader locale={locale} isAuthenticated isAdmin={user.role === "ADMIN"} />
-      <DashboardShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/dashboard">
+      <DashboardShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/dashboard" companyName={user.companyName}>
         <div className="space-y-8">
           <div className="surface-panel rounded-2xl p-6 lg:p-8">
             <p className="text-overline">{D.overline}</p>
@@ -79,61 +78,45 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <PremiumCard
-              title={D.latestAssessment}
-              variant="compact"
-              className="hover-lift"
-              meta={[{ label: D.roadmapSteps, value: latestAssessment ? String(latestAssessment._count.steps) : "—" }]}
-              footer={
-                latestAssessment ? (
-                  <Link href={`/assessment/${latestAssessment.id}`} className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
-                    {D.viewRoadmap} <Arrow className="h-3.5 w-3.5" />
-                  </Link>
-                ) : (
-                  <p className="text-sm text-[var(--muted)]">{D.noAssessment}</p>
-                )
-              }
-            />
-            <PremiumCard
-              title={D.progress}
-              variant="compact"
-              className="hover-lift"
-              footer={
-                <div>
-                  <div className="mb-2 h-2 overflow-hidden rounded-full bg-[var(--surface-muted)]">
-                    <div className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-amber-500" style={{ width: `${progressPct}%` }} />
-                  </div>
-                  <p className="text-xs text-[var(--muted)]">{progressPct}%</p>
-                </div>
-              }
-            />
-            <PremiumCard
-              title={D.activeReports}
-              variant="compact"
-              className="hover-lift"
-              meta={[{ label: D.activeReports, value: String(activeRequests.length) }]}
-              footer={
-                <Link href="/requests" className="inline-flex items-center gap-1 text-sm font-medium text-emerald-400">
-                  {D.viewReports} <Arrow className="h-3.5 w-3.5" />
+          <div className="decision-band grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--border-subtle)] sm:grid-cols-2 lg:grid-cols-4">
+            <div className="bg-[var(--card)] p-5">
+              <p className="text-caption">{D.latestAssessment}</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">
+                {latestAssessment ? `${latestAssessment._count.steps} ${D.roadmapSteps}` : D.noAssessment}
+              </p>
+              {latestAssessment ? (
+                <Link href={`/assessment/${latestAssessment.id}`} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-bright)]">
+                  {D.viewRoadmap} <Arrow className="h-3.5 w-3.5" />
                 </Link>
-              }
-            />
-            <PremiumCard
-              title={D.paymentStatus}
-              variant="compact"
-              className="hover-lift"
-              footer={
-                latestPayment ? (
-                  <div className="flex items-center justify-between">
+              ) : null}
+            </div>
+            <div className="bg-[var(--card)] p-5">
+              <p className="text-caption">{D.progress}</p>
+              <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[var(--surface-muted)]">
+                <div className="h-full rounded-full bg-gradient-to-r from-[var(--accent)] to-[var(--highlight)]" style={{ width: `${progressPct}%` }} />
+              </div>
+              <p className="mt-2 text-xs text-[var(--muted)]">{progressPct}%</p>
+            </div>
+            <div className="bg-[var(--card)] p-5">
+              <p className="text-caption">{D.activeReports}</p>
+              <p className="mt-2 text-sm font-semibold text-foreground">{activeRequests.length}</p>
+              <Link href="/requests" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-bright)]">
+                {D.viewReports} <Arrow className="h-3.5 w-3.5" />
+              </Link>
+            </div>
+            <div className="bg-[var(--card)] p-5">
+              <p className="text-caption">{D.paymentStatus}</p>
+              <div className="mt-3">
+                {latestPayment ? (
+                  <div className="flex items-center justify-between gap-2">
                     <Badge variant={latestPayment.status === "PAID" ? "success" : "warning"}>{latestPayment.status}</Badge>
                     <span className="text-xs text-[var(--muted)]">{latestPayment.invoiceNumber}</span>
                   </div>
                 ) : (
                   <p className="text-sm text-[var(--muted)]">{D.noPayments}</p>
-                )
-              }
-            />
+                )}
+              </div>
+            </div>
           </div>
 
           {!latestAssessment && (

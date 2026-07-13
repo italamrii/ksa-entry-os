@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader } from "@/components/layout/site-header";
 import { COMPANY_TYPES, ENTRY_GOALS } from "@/lib/constants";
 import { toast } from "sonner";
@@ -38,15 +37,20 @@ export default function OnboardingPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="auth-stage flex min-h-screen flex-col">
       <SiteHeader isAuthenticated />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle>Complete your profile</CardTitle>
-            <CardDescription>Help us personalize your Saudi market entry roadmap</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="surface-panel w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]">
+          <div className="border-b border-[var(--border-subtle)] px-6 py-5">
+            <p className="text-overline">Onboarding</p>
+            <h1 className="font-display mt-1 text-xl font-semibold text-foreground">
+              Complete your profile
+            </h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Help us personalize your Saudi market entry roadmap
+            </p>
+          </div>
+          <div className="px-6 py-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <Label htmlFor="companyName">Company name</Label>
@@ -85,8 +89,8 @@ export default function OnboardingPage() {
                 {loading ? "Saving..." : "Continue to dashboard"}
               </Button>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

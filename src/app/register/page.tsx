@@ -8,7 +8,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { registerSchema, type RegisterInput } from "@/lib/validation/schemas";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
 import { COMPANY_TYPES, ENTRY_GOALS, APP_NAME } from "@/lib/constants";
 import { toast } from "sonner";
@@ -58,15 +57,20 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="auth-stage flex min-h-screen flex-col">
       <SiteHeader />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
-        <Card className="w-full max-w-lg">
-          <CardHeader>
-            <CardTitle>Create your {APP_NAME} account</CardTitle>
-            <CardDescription>Minimal information only — no sensitive documents required</CardDescription>
-          </CardHeader>
-          <CardContent>
+        <div className="surface-panel w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]">
+          <div className="border-b border-[var(--border-subtle)] px-6 py-5">
+            <p className="text-overline">KSA Entry OS</p>
+            <h1 className="font-display mt-1 text-xl font-semibold text-foreground">
+              Create your {APP_NAME} account
+            </h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Minimal information only — no sensitive documents required
+            </p>
+          </div>
+          <div className="px-6 py-6">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
@@ -131,12 +135,12 @@ export default function RegisterPage() {
                 {loading ? "Creating account..." : "Create account"}
               </Button>
             </form>
-            <p className="mt-4 text-center text-sm text-slate-400">
+            <p className="mt-4 text-center text-sm text-[var(--muted)]">
               Already have an account?{" "}
-              <Link href="/login" className="text-emerald-400 hover:underline">Log in</Link>
+              <Link href="/login" className="text-[var(--accent-bright)] hover:underline">Log in</Link>
             </p>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );

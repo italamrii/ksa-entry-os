@@ -500,3 +500,54 @@ body {
     transform: none;
   }
 }
+
+/* ---- Stage 6.1 spatial workspace ---- */
+
+.exec-strip {
+  position: relative;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(120deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--forest) 12%, var(--card))),
+    var(--card);
+  box-shadow: var(--depth-1);
+  padding: var(--space-5) var(--space-5);
+}
+
+@media (min-width: 1024px) {
+  .exec-strip {
+    padding: var(--space-6) var(--space-8);
+  }
+}
+
+.exec-gauge {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface-muted) 70%, transparent);
+  padding: var(--space-4);
+}
+
+.pathway-stage {
+  background: linear-gradient(180deg, var(--card-elevated) 0%, var(--card) 55%, color-mix(in srgb, var(--forest) 18%, var(--card)) 100%);
+  min-height: 12rem;
+}
+
+.decision-band > * {
+  min-width: 0;
+}
+
+.auth-stage {
+  position: relative;
+  isolation: isolate;
+}
+
+.auth-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 50% 40% at 15% 10%, color-mix(in srgb, var(--accent) 14%, transparent), transparent),
+    radial-gradient(ellipse 40% 35% at 90% 0%, color-mix(in srgb, var(--highlight) 10%, transparent), transparent);
+  pointer-events: none;
+}

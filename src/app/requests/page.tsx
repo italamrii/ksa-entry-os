@@ -33,10 +33,11 @@ export default async function RequestsPage() {
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader locale={locale} isAuthenticated isAdmin={user.role === "ADMIN"} />
-      <DashboardShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/requests">
+      <DashboardShell locale={locale} isAdmin={user.role === "ADMIN"} currentPath="/requests" companyName={user.companyName}>
         <div className="space-y-8">
           <div>
-            <h1 className="text-headline text-foreground">{R.title}</h1>
+            <p className="text-overline">{locale === "ar" ? "التقارير" : "Reports"}</p>
+            <h1 className="font-display text-2xl font-semibold text-foreground">{R.title}</h1>
             <p className="mt-2 text-sm text-[var(--muted)]">{R.subtitle}</p>
           </div>
 

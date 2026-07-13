@@ -4,7 +4,6 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Users, FileText, ClipboardList, Link2, Layers, Shield } from "lucide-react";
 
 export default async function AdminDashboardPage() {
@@ -44,79 +43,86 @@ export default async function AdminDashboardPage() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader isAuthenticated isAdmin />
       <DashboardShell locale="en" isAdmin currentPath="/admin">
-        <div className="space-y-6">
-          <div className="flex items-center gap-2">
-            <Shield className="h-6 w-6 text-emerald-400" />
-            <h1 className="text-2xl font-bold text-white">Admin Dashboard</h1>
+        <div className="space-y-8">
+          <div className="flex items-center gap-3">
+            <Shield className="h-5 w-5 text-[var(--accent-bright)]" aria-hidden />
+            <div>
+              <p className="text-overline">Operations</p>
+              <h1 className="font-display text-2xl font-semibold text-foreground">Admin console</h1>
+            </div>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-3">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Total Users</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold text-white">{userCount}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Paid Requests</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold text-emerald-400">{paidCount}</p></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Pending Requests</CardTitle></CardHeader>
-              <CardContent><p className="text-3xl font-bold text-amber-400">{pendingRequests}</p></CardContent>
-            </Card>
+          <div className="decision-band grid gap-0 sm:grid-cols-3">
+            <div className="px-5 py-4">
+              <p className="text-caption">Total users</p>
+              <p className="text-metric mt-1 text-2xl font-semibold text-foreground">{userCount}</p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-caption">Paid requests</p>
+              <p className="text-metric mt-1 text-2xl font-semibold text-[var(--accent-bright)]">{paidCount}</p>
+            </div>
+            <div className="px-5 py-4">
+              <p className="text-caption">Pending requests</p>
+              <p className="text-metric mt-1 text-2xl font-semibold text-[var(--warning)]">{pendingRequests}</p>
+            </div>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <nav aria-label="Admin areas" className="flex flex-wrap gap-2">
             {adminLinks.map((link) => (
-              <Link key={link.href} href={link.href}>
-                <Card className="transition hover:border-emerald-500/50">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <link.icon className="h-5 w-5 text-emerald-400" />
-                    <span className="font-medium text-white">{link.label}</span>
-                  </CardContent>
-                </Card>
+              <Link
+                key={link.href}
+                href={link.href}
+                className="inline-flex items-center gap-2 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)] px-3 py-2 text-sm font-medium text-foreground transition hover:border-[color-mix(in_srgb,var(--accent)_40%,transparent)] hover:text-[var(--accent-bright)]"
+              >
+                <link.icon className="h-4 w-4 text-[var(--accent-bright)]" aria-hidden />
+                {link.label}
               </Link>
             ))}
-          </div>
+          </nav>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card>
-              <CardHeader><CardTitle className="text-base">Top Sectors</CardTitle></CardHeader>
-              <CardContent>
+            <section className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
+              <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+                <h2 className="text-sm font-semibold text-foreground">Top sectors</h2>
+              </div>
+              <ul className="divide-y divide-[var(--border-subtle)]">
                 {sectorStats.map((s) => (
-                  <div key={s.id} className="flex justify-between py-2 text-sm">
-                    <span className="text-slate-300">{s.nameEn}</span>
-                    <span className="text-slate-500">{s._count.users}</span>
-                  </div>
+                  <li key={s.id} className="flex justify-between px-5 py-3 text-sm">
+                    <span className="text-foreground/90">{s.nameEn}</span>
+                    <span className="text-metric text-[var(--muted)]">{s._count.users}</span>
+                  </li>
                 ))}
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="text-base">Recent Assessments</CardTitle></CardHeader>
-              <CardContent>
+              </ul>
+            </section>
+            <section className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
+              <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+                <h2 className="text-sm font-semibold text-foreground">Recent assessments</h2>
+              </div>
+              <ul className="divide-y divide-[var(--border-subtle)]">
                 {recentAssessments.map((a) => (
-                  <div key={a.id} className="py-2 text-sm">
-                    <p className="text-slate-300">{a.user.companyName ?? a.user.name}</p>
-                    <p className="text-slate-500">{a.createdAt.toLocaleDateString()}</p>
-                  </div>
+                  <li key={a.id} className="px-5 py-3 text-sm">
+                    <p className="text-foreground/90">{a.user.companyName ?? a.user.name}</p>
+                    <p className="text-caption">{a.createdAt.toLocaleDateString()}</p>
+                  </li>
                 ))}
-              </CardContent>
-            </Card>
+              </ul>
+            </section>
           </div>
 
-          <Card>
-            <CardHeader><CardTitle className="text-base">Audit Logs</CardTitle></CardHeader>
-            <CardContent>
-              <div className="max-h-64 overflow-y-auto">
-                {recentLogs.map((log) => (
-                  <div key={log.id} className="border-b border-slate-800 py-2 text-xs">
-                    <span className="text-emerald-400">{log.action}</span>
-                    <span className="mx-2 text-slate-600">|</span>
-                    <span className="text-slate-500">{log.createdAt.toISOString()}</span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <section className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
+            <div className="border-b border-[var(--border-subtle)] px-5 py-3">
+              <h2 className="text-sm font-semibold text-foreground">Audit logs</h2>
+            </div>
+            <div className="max-h-64 overflow-y-auto">
+              {recentLogs.map((log) => (
+                <div key={log.id} className="border-b border-[var(--border-subtle)] px-5 py-2 text-xs last:border-0">
+                  <span className="text-[var(--accent-bright)]">{log.action}</span>
+                  <span className="mx-2 text-[var(--muted)]">|</span>
+                  <span className="text-[var(--muted)]">{log.createdAt.toISOString()}</span>
+                </div>
+              ))}
+            </div>
+          </section>
         </div>
       </DashboardShell>
     </div>

@@ -106,26 +106,64 @@ export function AuthorityMatrix({ locale, authorities }: { locale: Locale; autho
   );
 }
 
-export function AssumptionsPanel({ locale, assumptions, onDecide }: { locale: Locale; assumptions: AssumptionVM[]; onDecide?: (key: string, decision: "CONFIRMED" | "REJECTED") => void }) {
+export function AssumptionsPanel({
+  locale,
+  assumptions,
+  onDecide,
+  embedded = false,
+}: {
+  locale: Locale;
+  assumptions: AssumptionVM[];
+  onDecide?: (key: string, decision: "CONFIRMED" | "REJECTED") => void;
+  embedded?: boolean;
+}) {
   return (
-    <NarrativePanel id="assumptions" title={t(locale, "Assumptions", "الافتراضات")} description={t(locale, "Made to complete the picture. Confirm or reject to refine re-evaluation.", "وُضعت لإكمال الصورة. أكّد أو ارفض لتحسين إعادة التقييم.")}>
+    <NarrativePanel
+      id={embedded ? undefined : "assumptions"}
+      embedded={embedded}
+      title={t(locale, "Assumptions", "الافتراضات")}
+      description={t(
+        locale,
+        "Made to complete the picture. Confirm or reject to refine re-evaluation.",
+        "وُضعت لإكمال الصورة. أكّد أو ارفض لتحسين إعادة التقييم."
+      )}
+    >
       {assumptions.length === 0 ? (
-        <p className="surface-panel rounded-2xl p-6 text-sm text-[var(--muted)]">{t(locale, "No assumptions were needed.", "لم تُطلب أي افتراضات.")}</p>
+        <p className="text-sm text-[var(--muted)]">{t(locale, "No assumptions were needed.", "لم تُطلب أي افتراضات.")}</p>
       ) : (
         <ul className="space-y-2">
           {assumptions.map((a) => (
-            <li key={a.key} className="surface-panel rounded-xl p-4">
+            <li key={a.key} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/30 p-3">
               <p className="text-sm font-medium text-foreground">{a.statement}</p>
+              {a.affectedPathwayLabel && (
+                <p className="mt-1 text-[11px] text-[var(--highlight)]">
+                  {t(locale, "Affects pathway: ", "يؤثر على المسار: ")}
+                  {a.affectedPathwayLabel}
+                </p>
+              )}
               <EvidencePanel summary={t(locale, "Why & impact if false", "السبب والأثر إذا كان خاطئًا")}>
-                <p>{t(locale, "Confidence: ", "الثقة: ")}{a.confidence}</p>
-                <p className="mt-1">{t(locale, "If false: ", "إذا كان خاطئًا: ")}{a.impactIfFalse}</p>
-                {a.affectedPathwayLabel && <p className="mt-1">{t(locale, "Affects: ", "يؤثر على: ")}{a.affectedPathwayLabel}</p>}
+                <p>
+                  {t(locale, "Confidence: ", "الثقة: ")}
+                  {a.confidence}
+                </p>
+                <p className="mt-1">
+                  {t(locale, "If false: ", "إذا كان خاطئًا: ")}
+                  {a.impactIfFalse}
+                </p>
               </EvidencePanel>
               <div className="mt-3 flex gap-2">
-                <button type="button" onClick={onDecide ? () => onDecide(a.key, "CONFIRMED") : undefined} className="rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-medium text-emerald-300 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
+                <button
+                  type="button"
+                  onClick={onDecide ? () => onDecide(a.key, "CONFIRMED") : undefined}
+                  className="rounded-lg border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] px-3 py-1.5 text-xs font-medium text-[var(--accent-bright)] outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
+                >
                   {t(locale, "Confirm", "تأكيد")}
                 </button>
-                <button type="button" onClick={onDecide ? () => onDecide(a.key, "REJECTED") : undefined} className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
+                <button
+                  type="button"
+                  onClick={onDecide ? () => onDecide(a.key, "REJECTED") : undefined}
+                  className="rounded-lg border border-[var(--border-subtle)] px-3 py-1.5 text-xs font-medium text-[var(--muted)] outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
+                >
                   {t(locale, "Reject", "رفض")}
                 </button>
               </div>
@@ -137,23 +175,41 @@ export function AssumptionsPanel({ locale, assumptions, onDecide }: { locale: Lo
   );
 }
 
-export function RiskLayer({ locale, risks }: { locale: Locale; risks: RiskVM[] }) {
+export function RiskLayer({
+  locale,
+  risks,
+  embedded = false,
+}: {
+  locale: Locale;
+  risks: RiskVM[];
+  embedded?: boolean;
+}) {
   const sevOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 } as const;
   const sorted = [...risks].sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity]);
   return (
-    <NarrativePanel id="risks" title={term(locale, "risks")} description={t(locale, "Planning risks — not legal conclusions.", "مخاطر تخطيطية، وليست استنتاجات قانونية.")}>
+    <NarrativePanel
+      id={embedded ? undefined : "risks"}
+      embedded={embedded}
+      title={term(locale, "risks")}
+      description={t(locale, "Planning risks — not legal conclusions.", "مخاطر تخطيطية، وليست استنتاجات قانونية.")}
+    >
       {sorted.length === 0 ? (
-        <p className="surface-panel rounded-2xl p-6 text-sm text-[var(--muted)]">{t(locale, "No notable risks surfaced.", "لم تظهر مخاطر بارزة.")}</p>
+        <p className="text-sm text-[var(--muted)]">{t(locale, "No notable risks surfaced.", "لم تظهر مخاطر بارزة.")}</p>
       ) : (
         <ul className="space-y-2">
           {sorted.map((r, i) => (
-            <li key={i} className="surface-panel rounded-xl p-4">
+            <li key={i} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/30 p-3">
               <div className="flex items-center justify-between gap-3">
                 <span className="text-sm font-medium text-foreground">{r.category}</span>
-                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sevClass(r.severity)}`}>{sevLabel(locale, r.severity)}</span>
+                <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${sevClass(r.severity)}`}>
+                  {sevLabel(locale, r.severity)}
+                </span>
               </div>
               <p className="mt-1 text-sm text-[var(--muted)]">{r.rationale}</p>
-              <p className="mt-1 text-sm"><span className="text-[var(--muted)]">{t(locale, "Next step: ", "الخطوة التالية: ")}</span><span className="text-foreground">{r.mitigation}</span></p>
+              <p className="mt-1 text-sm">
+                <span className="text-[var(--muted)]">{t(locale, "Next step: ", "الخطوة التالية: ")}</span>
+                <span className="text-foreground">{r.mitigation}</span>
+              </p>
             </li>
           ))}
         </ul>
@@ -169,25 +225,50 @@ function sevClass(s: RiskVM["severity"]) {
   return s === "HIGH" ? "border border-red-500/30 bg-red-500/10 text-red-300" : s === "MEDIUM" ? "border border-amber-500/30 bg-amber-500/10 text-amber-300" : "border border-[var(--border-subtle)] text-[var(--muted)]";
 }
 
-export function NextActionFlow({ locale, actions }: { locale: Locale; actions: NextActionVM[] }) {
+export function NextActionFlow({
+  locale,
+  actions,
+  embedded = false,
+}: {
+  locale: Locale;
+  actions: NextActionVM[];
+  embedded?: boolean;
+}) {
   return (
-    <NarrativePanel id="next-actions" title={t(locale, "Prioritized next actions", "الإجراءات التالية حسب الأولوية")} description={t(locale, "A planning sequence. Completing steps does not guarantee any approval.", "تسلسل تخطيطي. إكمال الخطوات لا يضمن أي موافقة.")}>
+    <NarrativePanel
+      id={embedded ? undefined : "next-actions"}
+      embedded={embedded}
+      title={t(locale, "Prioritized next actions", "الإجراءات التالية حسب الأولوية")}
+      description={t(
+        locale,
+        "A planning sequence. Completing steps does not guarantee any approval.",
+        "تسلسل تخطيطي. إكمال الخطوات لا يضمن أي موافقة."
+      )}
+    >
       {actions.length === 0 ? (
-        <p className="surface-panel rounded-2xl p-6 text-sm text-[var(--muted)]">{t(locale, "No actions to prioritize yet.", "لا توجد إجراءات بعد.")}</p>
+        <p className="text-sm text-[var(--muted)]">{t(locale, "No actions to prioritize yet.", "لا توجد إجراءات بعد.")}</p>
       ) : (
-        <ol className="relative space-y-2 border-s border-[var(--border-subtle)] ps-5">
+        <ol className="relative space-y-2 border-s border-[var(--border-subtle)] ps-4">
           {actions.map((a, i) => (
-            <li key={a.ruleKey} className="surface-panel rounded-xl p-4">
+            <li key={a.ruleKey} className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/30 p-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-foreground"><span className="text-[var(--muted)]">{i + 1}. </span>{a.title}</p>
+                  <p className="text-sm font-medium text-foreground">
+                    <span className="text-[var(--muted)]">{i + 1}. </span>
+                    {a.title}
+                  </p>
                   <div className="mt-2 flex flex-wrap gap-2">
                     <VerificationBadge locale={locale} state={a.verification} />
                     <ProfessionalReviewBadge locale={locale} state={a.verification} />
                   </div>
                 </div>
                 {a.officialSourceUrl && (
-                  <a href={a.officialSourceUrl} target="_blank" rel="noopener noreferrer nofollow" className="shrink-0 text-xs font-medium text-emerald-400 underline underline-offset-2">
+                  <a
+                    href={a.officialSourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer nofollow"
+                    className="shrink-0 text-xs font-medium text-[var(--accent-bright)] underline underline-offset-2"
+                  >
                     {t(locale, "Official source ↗", "المصدر الرسمي ↗")}
                   </a>
                 )}
@@ -230,16 +311,23 @@ export function ReportWorkspace({ locale, report, assessmentId, canExport }: { l
 /** Presentational source rows for the SourceDrawer content (also unit-testable). */
 export function SourceList({ locale, sources, onOpenSource }: { locale: Locale; sources: SourceVM[]; onOpenSource?: (s: SourceVM) => void }) {
   return (
-    <ul className="space-y-2">
+    <ul className="divide-y divide-[var(--border-subtle)] rounded-[var(--radius-md)] border border-[var(--border-subtle)]">
       {sources.map((s) => (
-        <li key={s.id} className="surface-panel flex items-center justify-between gap-3 rounded-xl p-4">
+        <li key={s.id} className="flex items-center justify-between gap-3 px-4 py-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">{s.title}</p>
-            <p className="text-xs text-[var(--muted)]">{s.authority ?? t(locale, "Unknown authority", "جهة غير معروفة")} · {classificationLabel(locale, s.classification)}</p>
+            <p className="text-xs text-[var(--muted)]">
+              {s.authority ?? t(locale, "Unknown authority", "جهة غير معروفة")} · {classificationLabel(locale, s.classification)}
+            </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <FreshnessIndicator locale={locale} state={s.freshness} />
-            <button type="button" onClick={onOpenSource ? () => onOpenSource(s) : undefined} aria-haspopup="dialog" className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
+            <button
+              type="button"
+              onClick={onOpenSource ? () => onOpenSource(s) : undefined}
+              aria-haspopup="dialog"
+              className="rounded-lg border border-[var(--border-subtle)] px-2.5 py-1 text-xs text-foreground outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
+            >
               {t(locale, "Details", "التفاصيل")}
             </button>
           </div>

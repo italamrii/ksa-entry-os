@@ -8,16 +8,26 @@ export function NarrativePanel({
   actions,
   children,
   id,
+  className,
+  embedded = false,
 }: {
   title: string;
   description?: string;
   actions?: React.ReactNode;
   children: React.ReactNode;
   id?: string;
+  className?: string;
+  embedded?: boolean;
 }) {
   return (
-    <section id={id} aria-label={title} className="scroll-mt-24">
-      <div className="mb-4 flex items-end justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
+    <section id={id} aria-label={title} className={["scroll-mt-24", className].filter(Boolean).join(" ")}>
+      <div
+        className={
+          embedded
+            ? "mb-3 flex items-end justify-between gap-3"
+            : "mb-4 flex items-end justify-between gap-3 border-b border-[var(--border-subtle)] pb-3"
+        }
+      >
         <div className="min-w-0">
           <h2 className="text-overline">{title}</h2>
           {description && <p className="mt-1.5 text-sm text-[var(--muted)]">{description}</p>}

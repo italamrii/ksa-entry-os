@@ -36,13 +36,13 @@ export function SourceDrawer({ locale, source, onClose }: { locale: Locale; sour
   const dir = locale === "ar" ? "rtl" : "ltr";
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end" dir={dir}>
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+    <div className="fixed inset-0 z-50 flex items-end justify-end sm:items-stretch" dir={dir}>
+      <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
       <aside
         role="dialog"
         aria-modal="true"
         aria-label={t(locale, "Official source details", "تفاصيل المصدر الرسمي")}
-        className="relative flex h-full w-full max-w-md flex-col overflow-y-auto border-s border-[var(--border-subtle)] bg-[var(--card)] p-6 shadow-2xl animate-drawer-in motion-reduce:animate-none sm:max-w-md max-sm:mt-auto max-sm:max-h-[85vh] max-sm:rounded-t-[var(--radius-lg)]"
+        className="relative flex max-h-[88vh] w-full max-w-md flex-col overflow-y-auto rounded-t-[var(--radius-lg)] border border-[var(--border-subtle)] border-b-0 bg-[var(--card)] p-6 shadow-2xl animate-drawer-in motion-reduce:animate-none sm:h-full sm:max-h-none sm:rounded-none sm:border-b sm:border-s sm:border-e-0 sm:border-t-0"
       >
         <div className="flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-foreground">{source.title}</h2>

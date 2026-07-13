@@ -2,31 +2,44 @@ import { t } from "@/lib/i18n";
 import { term, levelLabel } from "@/lib/i18n/glossary";
 import { formatDate, formatNumber } from "@/lib/i18n/format";
 import type { ExecutiveSummaryVM, Locale } from "@/lib/view-models/types";
-import { NarrativePanel } from "./primitives";
 import { FreshnessIndicator, PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
+import { SaudiTopo } from "@/components/brand/saudi-topo";
 
 /**
- * ExecutiveSummary — the first view. Summarizes; detail appears progressively
- * elsewhere. Scores are labeled as planning indicators, never approval odds.
+ * Executive Summary Strip — persistent top region of the decision workspace.
+ * Not a metric-card row: a bilingual headline band + planning gauge + facts rail.
  */
 export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary: ExecutiveSummaryVM }) {
+  const headline =
+    summary.leadingPathwayTitle ??
+    t(locale, "No matching pathway yet", "لا يوجد مسار مطابق بعد");
+
   return (
-    <NarrativePanel id="overview" title={t(locale, "Executive summary", "الملخص التنفيذي")}>
-      <div className="surface-panel relative overflow-hidden rounded-[var(--radius-lg)] p-6 lg:p-8">
-        <div className="pointer-events-none absolute inset-0 topo-grid opacity-40" aria-hidden />
-        <div className="relative grid gap-6 lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <p className="text-caption">{t(locale, "Leading recommended pathway", "المسار الموصى به الرئيسي")}</p>
-            <h3 className="font-display mt-1 text-xl font-semibold tracking-tight text-foreground">
-              {summary.leadingPathwayTitle ?? t(locale, "No matching pathway yet", "لا يوجد مسار مطابق بعد")}
-            </h3>
-            <div className="mt-3 flex flex-wrap gap-2">
+    <section id="overview" aria-label={t(locale, "Executive summary", "الملخص التنفيذي")} className="scroll-mt-24">
+      <div className="exec-strip relative overflow-hidden">
+        <SaudiTopo className="pointer-events-none absolute inset-y-0 end-0 w-[55%] max-w-xl opacity-40 motion-reduce:opacity-25" glow />
+        <div className="pointer-events-none absolute inset-0 topo-grid opacity-25" aria-hidden />
+
+        <div className="relative grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(12rem,0.7fr)] lg:items-center">
+          <div className="min-w-0">
+            <p className="text-overline">{t(locale, "Executive summary", "الملخص التنفيذي")}</p>
+            <h2 className="font-display mt-2 text-2xl font-semibold leading-tight tracking-tight text-foreground sm:text-3xl">
+              {headline}
+            </h2>
+            {summary.companyName && (
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {[summary.companyName, summary.country, summary.companyType].filter(Boolean).join(" · ")}
+              </p>
+            )}
+
+            <div className="mt-4 flex flex-wrap gap-2">
               <VerificationBadge locale={locale} state={summary.verification} />
               <ProfessionalReviewBadge locale={locale} state={summary.verification} />
               <FreshnessIndicator locale={locale} state={summary.sourceFreshness} />
             </div>
+
             {summary.nextActionTitle && (
-              <p className="surface-strip mt-5 rounded-[var(--radius-md)] text-sm text-[var(--muted)]">
+              <p className="mt-5 border-s-2 border-[var(--highlight)] ps-3 text-sm text-[var(--muted)]">
                 <span className="font-medium text-foreground">
                   {t(locale, "Next recommended action: ", "الإجراء التالي الموصى به: ")}
                 </span>
@@ -34,7 +47,8 @@ export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary:
               </p>
             )}
           </div>
-          <div className="rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/40 p-4">
+
+          <div className="exec-gauge">
             {summary.planning ? (
               <PlanningIndicator locale={locale} planning={summary.planning} />
             ) : (
@@ -45,7 +59,7 @@ export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary:
           </div>
         </div>
 
-        <dl className="relative mt-6 grid grid-cols-2 gap-4 border-t border-[var(--border-subtle)] pt-6 sm:grid-cols-4">
+        <dl className="relative mt-6 grid grid-cols-2 gap-px overflow-hidden rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--border-subtle)] sm:grid-cols-4">
           <Metric label={term(locale, "complexity")} value={summary.complexity ? levelLabel(locale, summary.complexity) : "—"} />
           <Metric
             label={t(locale, "Unresolved assumptions", "افتراضات غير محسومة")}
@@ -55,15 +69,15 @@ export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary:
           <Metric label={term(locale, "informationCutoff")} value={formatDate(locale, summary.informationCutoff)} />
         </dl>
       </div>
-    </NarrativePanel>
+    </section>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div className="bg-[var(--card)] px-3 py-3 sm:px-4">
       <dt className="text-caption">{label}</dt>
-      <dd className="text-metric mt-0.5 text-sm font-semibold text-foreground">{value}</dd>
+      <dd className="text-metric mt-1 text-sm font-semibold text-foreground">{value}</dd>
     </div>
   );
 }

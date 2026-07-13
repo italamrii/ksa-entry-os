@@ -57,8 +57,8 @@ export default function NewAssessmentPage() {
   const progress = ((step + 1) / QUESTIONS.length) * 100;
 
   const labels = locale === "ar"
-    ? { title: "تحليل ملف دخول الشركة", subtitle: "أسئلة موجَّهة لربط المسارات الرسمية المناسبة", back: "رجوع", next: "التالي", generate: "إنشاء خارطة طريق الدخول", generating: "جاري رسم المسارات…", yes: "نعم", no: "لا", placeholder: "صف نشاط شركتك", review: "مراجعة الإجابات", provided: "مُقدَّم", edit: "تعديل" }
-    : { title: "Company entry profiling", subtitle: "Guided questions to map official pathways for your expansion plan", back: "Back", next: "Next", generate: "Generate entry roadmap", generating: "Mapping pathways…", yes: "Yes", no: "No", placeholder: "Describe your business activity", review: "Review answers", provided: "Provided", edit: "Edit" };
+    ? { title: "جلسة تخطيط الدخول", subtitle: "أسئلة موجَّهة لربط المسارات الرسمية المناسبة", back: "رجوع", next: "التالي", generate: "إنشاء خارطة طريق الدخول", generating: "جاري رسم المسارات…", yes: "نعم", no: "لا", placeholder: "صف نشاط شركتك", review: "مراجعة الإجابات", provided: "مُقدَّم", edit: "تعديل", why: "لماذا يهم", journey: "رحلة التقييم" }
+    : { title: "Strategic entry session", subtitle: "Guided questions to map official pathways for your expansion plan", back: "Back", next: "Next", generate: "Generate entry roadmap", generating: "Mapping pathways…", yes: "Yes", no: "No", placeholder: "Describe your business activity", review: "Review answers", provided: "Provided", edit: "Edit", why: "Why this matters", journey: "Assessment journey" };
 
   function setValue(key: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -107,7 +107,8 @@ export default function NewAssessmentPage() {
     <div className="flex min-h-screen flex-col">
       <SiteHeader isAuthenticated />
       <DashboardShell locale={locale} currentPath="/assessment/new">
-        <div className="surface-panel mx-auto w-full max-w-xl overflow-hidden rounded-[var(--radius-lg)]">
+        <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_14rem]">
+        <div className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
           <div className="border-b border-[var(--border-subtle)] px-6 py-5">
             <div className="mb-4 h-1.5 overflow-hidden rounded-full bg-[var(--surface-muted)]" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
               <div
@@ -166,7 +167,10 @@ export default function NewAssessmentPage() {
                 <div>
                   <p className="text-lg font-semibold text-foreground">{current.label}</p>
                   {"hint" in current && current.hint && (
-                    <p className="mt-2 text-sm text-[var(--muted)]">{current.hint}</p>
+                    <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 px-4 py-3">
+                      <p className="text-caption text-[var(--highlight)]">{labels.why}</p>
+                      <p className="mt-1 text-sm text-[var(--muted)]">{current.hint}</p>
+                    </div>
                   )}
                 </div>
 
@@ -216,6 +220,32 @@ export default function NewAssessmentPage() {
               </>
             )}
           </div>
+        </div>
+
+        <aside className="hidden lg:block" aria-label={labels.journey}>
+          <p className="text-overline mb-3">{labels.journey}</p>
+          <ol className="space-y-1">
+            {QUESTIONS.map((q, i) => {
+              const done = showSummary || i < step;
+              const active = !showSummary && i === step;
+              return (
+                <li
+                  key={q.key}
+                  className={`rounded-[var(--radius-sm)] px-3 py-2 text-xs transition ${
+                    active
+                      ? "bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--accent-bright)]"
+                      : done
+                        ? "text-foreground/80"
+                        : "text-[var(--muted)]"
+                  }`}
+                >
+                  <span className="text-metric me-2 opacity-70">{i + 1}</span>
+                  {q.label}
+                </li>
+              );
+            })}
+          </ol>
+        </aside>
         </div>
       </DashboardShell>
     </div>

@@ -3,7 +3,6 @@ import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/input";
 
 export default async function AdminUsersPage() {
@@ -32,22 +31,25 @@ export default async function AdminUsersPage() {
       <SiteHeader isAuthenticated isAdmin />
       <DashboardShell locale="en" isAdmin currentPath="/admin">
         <div className="space-y-6">
-          <h1 className="text-2xl font-bold text-white">Users</h1>
-          <div className="space-y-3">
-            {users.map((user) => (
-              <Card key={user.id}>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-base">{user.name}</CardTitle>
-                  <Badge variant={user.role === "ADMIN" ? "success" : "default"}>{user.role}</Badge>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-slate-400">{user.email}</p>
-                  <p className="text-sm text-slate-500">{user.companyName} — {user.country}</p>
-                  {user.sector && <p className="text-xs text-slate-600">{user.sector.nameEn}</p>}
-                </CardContent>
-              </Card>
-            ))}
+          <div>
+            <p className="text-overline">Admin</p>
+            <h1 className="font-display text-2xl font-semibold text-foreground">Users</h1>
           </div>
+          <ul className="surface-panel overflow-hidden rounded-[var(--radius-lg)] divide-y divide-[var(--border-subtle)]">
+            {users.map((user) => (
+              <li key={user.id} className="flex flex-wrap items-start justify-between gap-3 px-5 py-4">
+                <div className="min-w-0">
+                  <p className="font-medium text-foreground">{user.name}</p>
+                  <p className="text-sm text-[var(--muted)]">{user.email}</p>
+                  <p className="text-sm text-[var(--muted)]">
+                    {user.companyName} — {user.country}
+                  </p>
+                  {user.sector && <p className="text-caption">{user.sector.nameEn}</p>}
+                </div>
+                <Badge variant={user.role === "ADMIN" ? "success" : "default"}>{user.role}</Badge>
+              </li>
+            ))}
+          </ul>
         </div>
       </DashboardShell>
     </div>

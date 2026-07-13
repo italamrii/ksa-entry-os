@@ -19,6 +19,7 @@ import { PremiumCard } from "@/components/marketing/premium-card";
 import { HeroPreview } from "@/components/marketing/hero-preview";
 import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Reveal } from "@/components/marketing/reveal";
+import { SaudiTopo } from "@/components/brand/saudi-topo";
 import { PRICING } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 import { getLanding, landingContent } from "@/lib/i18n/content";
@@ -45,7 +46,8 @@ export default async function HomePage({
       <SiteHeader locale={locale} isAuthenticated={!!user} isAdmin={user?.role === "ADMIN"} />
 
       <section className="hero-mesh relative overflow-hidden px-4 pb-8 pt-12 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
-        <div className="mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+        <SaudiTopo className="pointer-events-none absolute inset-y-0 end-[-8%] hidden w-[58%] opacity-35 lg:block" glow />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <p className="text-overline mb-4">{L.hero.overline}</p>
             <h1 className="text-display text-foreground">{L.hero.title}</h1>
@@ -58,9 +60,9 @@ export default async function HomePage({
                   <Arrow className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link href={localeHref("/#how-it-works", locale)}>
+              <Link href={localeHref(user ? "/workspace" : "/#how-it-works", locale)}>
                 <Button variant="outline" size="lg" className="w-full sm:w-auto">
-                  {L.hero.ctaSecondary}
+                  {user ? (locale === "ar" ? "فتح مساحة العمل" : "Open workspace") : L.hero.ctaSecondary}
                 </Button>
               </Link>
             </div>
@@ -106,29 +108,37 @@ export default async function HomePage({
         <Reveal>
           <SectionHeader title={L.howItWorks.title} subtitle={L.howItWorks.subtitle} />
         </Reveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+        <ol className="relative space-y-0 lg:flex lg:items-stretch lg:gap-0">
           {L.howItWorks.steps.map((item, i) => (
-            <Reveal key={item.step} delay={i * 100}>
-              <PremiumCard title={item.title} description={item.desc} variant="compact" badge={item.step} className="hover-lift h-full" />
+            <Reveal key={item.step} delay={i * 100} className="lg:flex-1">
+              <li className="relative border-b border-[var(--border-subtle)] py-5 pe-4 last:border-0 lg:border-b-0 lg:border-e lg:px-5 lg:py-0 last:lg:border-e-0">
+                <p className="text-overline">{item.step}</p>
+                <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{item.title}</h3>
+                <p className="mt-2 text-sm text-[var(--muted)]">{item.desc}</p>
+              </li>
             </Reveal>
           ))}
-        </div>
+        </ol>
       </Section>
 
       <Section>
         <Reveal>
           <SectionHeader title={L.provides.title} subtitle={L.provides.subtitle} />
         </Reveal>
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <ul className="decision-band grid gap-0 sm:grid-cols-2 lg:grid-cols-3">
           {L.provides.cards.map((card, i) => {
             const Icon = provideIcons[i];
             return (
-              <Reveal key={card.title} delay={i * 60}>
-                <PremiumCard title={card.title} description={card.desc} icon={Icon} className="hover-lift h-full" />
-              </Reveal>
+              <li key={card.title} className="flex gap-3 px-5 py-5">
+                <Icon className="mt-0.5 h-5 w-5 shrink-0 text-[var(--accent-bright)]" aria-hidden />
+                <div>
+                  <h3 className="font-semibold text-foreground">{card.title}</h3>
+                  <p className="mt-1 text-sm text-[var(--muted)]">{card.desc}</p>
+                </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       </Section>
 
       <Section variant="bordered">
@@ -144,13 +154,18 @@ export default async function HomePage({
         <Reveal>
           <SectionHeader title={L.whyUse.title} />
         </Reveal>
-        <div className="grid gap-5 md:grid-cols-3">
-          {L.whyUse.cards.map((card, i) => (
-            <Reveal key={card.title} delay={i * 100}>
-              <PremiumCard title={card.title} description={card.desc} icon={whyIcons[i]} className="hover-lift h-full" />
-            </Reveal>
-          ))}
-        </div>
+        <ul className="grid gap-6 md:grid-cols-3">
+          {L.whyUse.cards.map((card, i) => {
+            const Icon = whyIcons[i];
+            return (
+              <li key={card.title} className="surface-strip rounded-[var(--radius-md)]">
+                <Icon className="h-5 w-5 text-[var(--highlight)]" aria-hidden />
+                <h3 className="mt-3 font-display text-lg font-semibold text-foreground">{card.title}</h3>
+                <p className="mt-2 text-sm text-[var(--muted)]">{card.desc}</p>
+              </li>
+            );
+          })}
+        </ul>
       </Section>
 
       <Section>
