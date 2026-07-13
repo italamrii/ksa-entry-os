@@ -54,6 +54,7 @@ export interface AssumptionVM {
   impactIfFalse: string;
   confidence: Confidence;
   affectedPathwayKey: string | null;
+  affectedPathwayLabel: string | null;
 }
 
 export interface RiskVM {
@@ -161,6 +162,8 @@ export interface EvaluationViewInput {
     ruleKey: string;
     ruleVersion: number;
     pathwayId: string | null;
+    titleEn?: string | null;
+    titleAr?: string | null;
     order: number;
     priorityScore: number | null;
     priorityFactors: unknown;
@@ -173,12 +176,12 @@ export interface EvaluationViewInput {
   dependencies: { pathwayId: string; stepId: string; order: number; titleEn: string; titleAr: string; requiresVerification: boolean; requiresProfessionalReview: boolean; dependsOn: string[] }[];
   assumptions: { key: string; textEn: string; textAr: string; confidence: Confidence; impactIfFalseEn: string; impactIfFalseAr: string; ruleKey: string }[];
   risks: { category: string; severity: Severity; rationaleEn: string; rationaleAr: string; mitigationEn: string; mitigationAr: string; ruleKey?: string }[];
-  sources: { id: string; title: string; url: string; status: string; classification: string; version: number; authority: string | null; language?: string; lastVerified: string | null; nextReview: string | null; stale: boolean }[];
+  sources: { id: string; title: string; url: string; status: string; classification: string; version: number; authority: string | null; authorityAr?: string | null; language?: string; lastVerified: string | null; nextReview: string | null; stale: boolean }[];
   nextActions: { ruleKey: string; titleEn: string; titleAr: string; requiresVerification: boolean; requiresProfessionalReview: boolean; officialSourceUrl: string | null; order: number }[];
-  excludedPathways: { ruleKey: string; pathwaySlug: string | null; reasonEn: string; reasonAr: string; failedFacts: string[] }[];
+  excludedPathways: { ruleKey: string; pathwaySlug: string | null; titleEn?: string | null; titleAr?: string | null; reasonEn: string; reasonAr: string; failedFacts: string[] }[];
   summary: {
     matchedRules: number; excludedRules: number; candidatePathways: number; assumptions: number; risks: number;
-    professionalReviewRequired: boolean; officialVerificationRequired: boolean; disclaimer: string;
+    professionalReviewRequired: boolean; officialVerificationRequired: boolean; disclaimer: string; disclaimerAr?: string;
   };
 }
 

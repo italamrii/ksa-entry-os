@@ -30,7 +30,8 @@
   --card-elevated: #ffffff;
   --muted: #6b655c;
   --accent: var(--emerald);
-  --accent-bright: #229a72;
+  /* WCAG AA (>=4.5:1) as text on the light --background/--card surfaces. */
+  --accent-bright: #0f6b4a;
   --accent-secondary: var(--champagne);
   --highlight: var(--champagne);
   --border: #e4ddd0;

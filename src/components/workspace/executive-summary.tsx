@@ -1,4 +1,6 @@
 import { t } from "@/lib/i18n";
+import { term, levelLabel } from "@/lib/i18n/glossary";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 import type { ExecutiveSummaryVM, Locale } from "@/lib/view-models/types";
 import { NarrativePanel } from "./primitives";
 import { FreshnessIndicator, PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
@@ -44,20 +46,13 @@ export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary:
         </div>
 
         <dl className="relative mt-6 grid grid-cols-2 gap-4 border-t border-[var(--border-subtle)] pt-6 sm:grid-cols-4">
-          <Metric label={t(locale, "Complexity", "التعقيد")} value={summary.complexity ?? "—"} />
+          <Metric label={term(locale, "complexity")} value={summary.complexity ? levelLabel(locale, summary.complexity) : "—"} />
           <Metric
             label={t(locale, "Unresolved assumptions", "افتراضات غير محسومة")}
-            value={String(summary.unresolvedAssumptions)}
+            value={formatNumber(locale, summary.unresolvedAssumptions)}
           />
-          <Metric label={t(locale, "Key risks", "المخاطر الرئيسية")} value={String(summary.keyRisks.length)} />
-          <Metric
-            label={t(locale, "Information cutoff", "تاريخ توقف المعلومات")}
-            value={
-              summary.informationCutoff
-                ? new Date(summary.informationCutoff).toLocaleDateString(locale)
-                : "—"
-            }
-          />
+          <Metric label={t(locale, "Key risks", "المخاطر الرئيسية")} value={formatNumber(locale, summary.keyRisks.length)} />
+          <Metric label={term(locale, "informationCutoff")} value={formatDate(locale, summary.informationCutoff)} />
         </dl>
       </div>
     </NarrativePanel>

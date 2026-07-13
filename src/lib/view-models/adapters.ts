@@ -4,6 +4,7 @@
  * backend already produced. They never evaluate rules, derive risks, score
  * pathways, or make governance decisions.
  */
+import { COMPANY_TYPES, ENTRY_GOALS, LAUNCH_TIMELINES } from "@/lib/constants";
 import type {
   AssumptionVM,
   AuthorityVM,
@@ -47,10 +48,30 @@ function planningLabel(locale: Locale, score: number): string {
   return pick(locale, "Lower planning priority", "أولوية تخطيط أقل");
 }
 
-function factValue(locale: Locale, value: unknown): string {
+const ORIGIN_LABEL: Record<string, { en: string; ar: string }> = {
+  foreign: { en: "Foreign", ar: "أجنبية" },
+  local: { en: "Local", ar: "محلية" },
+};
+
+function labelFromList(
+  list: readonly { value: string; labelEn: string; labelAr: string }[],
+  value: string,
+  locale: Locale
+): string | null {
+  const m = list.find((x) => x.value === value);
+  return m ? pick(locale, m.labelEn, m.labelAr) : null;
+}
+
+/** Localize a normalized fact value (enum keys → approved bilingual labels). */
+function factValue(locale: Locale, key: string, value: unknown): string {
   if (typeof value === "boolean") return value ? pick(locale, "Yes", "نعم") : pick(locale, "No", "لا");
   if (value == null) return pick(locale, "Not provided", "غير متوفر");
-  return String(value);
+  const s = String(value);
+  if (key === "company.origin") return ORIGIN_LABEL[s] ? pick(locale, ORIGIN_LABEL[s].en, ORIGIN_LABEL[s].ar) : s;
+  if (key === "company.type") return labelFromList(COMPANY_TYPES, s, locale) ?? s;
+  if (key === "objective") return labelFromList(ENTRY_GOALS, s, locale) ?? s;
+  if (key === "plan.timeline") return labelFromList(LAUNCH_TIMELINES, s, locale) ?? s;
+  return s;
 }
 
 function deriveFreshness(source: { stale: boolean; status: string; nextReview: string | null } | null, now: Date): FreshnessState {
@@ -64,7 +85,7 @@ function toSourceVM(locale: Locale, s: EvaluationViewInput["sources"][number], n
   return {
     id: s.id,
     title: s.title,
-    authority: s.authority,
+    authority: locale === "ar" && s.authorityAr ? s.authorityAr : s.authority,
     classification: s.classification,
     url: s.url,
     language: s.language ?? "en",
@@ -95,12 +116,21 @@ export function buildWorkspaceViewModel(
 ): WorkspaceViewModel {
   const dir = locale === "ar" ? "rtl" : "ltr";
 
+  // Localized pathway title per rule key (for cross-references in assumptions).
+  const titleByRuleKey = new Map(
+    (view?.recommendations ?? []).map((r) => [
+      r.ruleKey,
+      pick(locale, r.titleEn ?? humanizeKey(r.ruleKey), r.titleAr ?? r.titleEn ?? humanizeKey(r.ruleKey)),
+    ])
+  );
+
   const assumptions: AssumptionVM[] = (view?.assumptions ?? []).map((a) => ({
     key: a.key,
     statement: pick(locale, a.textEn, a.textAr),
     impactIfFalse: pick(locale, a.impactIfFalseEn, a.impactIfFalseAr),
     confidence: a.confidence,
     affectedPathwayKey: a.ruleKey ?? null,
+    affectedPathwayLabel: a.ruleKey ? titleByRuleKey.get(a.ruleKey) ?? null : null,
   }));
 
   const risks: RiskVM[] = (view?.risks ?? []).map((r) => ({
@@ -122,7 +152,7 @@ export function buildWorkspaceViewModel(
     const triggeredFacts: FactVM[] = (reasoning.triggeredFacts ?? []).map((f) => ({
       key: f.key,
       label: labelForFact(view, f.key, locale),
-      value: factValue(locale, f.value),
+      value: factValue(locale, f.key, f.value),
       source: f.source,
       confidence: f.confidence,
     }));
@@ -147,7 +177,7 @@ export function buildWorkspaceViewModel(
   const excluded: PathwayVM[] = (view?.excludedPathways ?? []).map((e) => ({
     id: null,
     ruleKey: e.ruleKey,
-    title: e.pathwaySlug ?? e.ruleKey,
+    title: pick(locale, e.titleEn ?? humanizeKey(e.ruleKey), e.titleAr ?? e.titleEn ?? humanizeKey(e.ruleKey)),
     included: false,
     reason: pick(locale, e.reasonEn, e.reasonAr),
     planning: null,
@@ -207,10 +237,14 @@ export function buildWorkspaceViewModel(
     informationCutoff: view ? toIso(view.informationCutoff) : null,
   };
 
+  const evaluationDisclaimer = view
+    ? pick(locale, view.summary.disclaimer, view.summary.disclaimerAr ?? view.summary.disclaimer)
+    : "";
+
   const report: ReportSummaryVM = {
     scope: pick(locale, "Saudi market-entry pathways", "مسارات دخول السوق السعودي"),
     informationCutoff: view ? toIso(view.informationCutoff) : null,
-    disclaimer: view?.summary.disclaimer ?? "",
+    disclaimer: evaluationDisclaimer,
     pathwayCount: included.length,
     assumptionCount: assumptions.length,
     riskCount: risks.length,
@@ -232,7 +266,7 @@ export function buildWorkspaceViewModel(
     sources,
     nextActions,
     report,
-    disclaimer: view?.summary.disclaimer ?? "",
+    disclaimer: evaluationDisclaimer,
   };
 }
 
@@ -254,20 +288,24 @@ function factList(view: EvaluationViewInput, locale: Locale, source: "provided" 
     .map(([key, f]) => ({
       key,
       label: pick(locale, f.labelEn ?? key, f.labelAr ?? key),
-      value: factValue(locale, f.value),
+      value: factValue(locale, key, f.value),
       source: f.source,
       confidence: f.confidence,
     }))
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
+function humanizeKey(ruleKey: string): string {
+  const key = ruleKey.replace(/_/g, " ");
+  return key.charAt(0).toUpperCase() + key.slice(1);
+}
+
 function titleFromReasoning(rec: EvaluationViewInput["recommendations"][number], locale: Locale): { title: string } {
-  // The recommendation's localized reasoning is the executive sentence; the
-  // short title is the rule key made readable. Real pathway titles live in the
-  // reasoning payload's localized text — use the rule key as a stable label.
-  const key = rec.ruleKey.replace(/_/g, " ");
-  void locale;
-  return { title: key.charAt(0).toUpperCase() + key.slice(1) };
+  // Prefer the pathway's localized title (from buildEvaluationView); fall back
+  // to a humanized rule key only when no pathway title is available.
+  const localized = locale === "ar" ? rec.titleAr : rec.titleEn;
+  if (localized && localized.trim()) return { title: localized };
+  return { title: humanizeKey(rec.ruleKey) };
 }
 
 function complexityFromFactors(rec: EvaluationViewInput["recommendations"][number]): string | null {

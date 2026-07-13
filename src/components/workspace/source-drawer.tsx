@@ -3,6 +3,8 @@
 import { useEffect, useRef } from "react";
 import { X, ExternalLink, AlertTriangle } from "lucide-react";
 import { t } from "@/lib/i18n";
+import { term, classificationLabel } from "@/lib/i18n/glossary";
+import { formatDate, formatNumber } from "@/lib/i18n/format";
 import type { Locale, SourceVM } from "@/lib/view-models/types";
 import { FreshnessIndicator } from "./badges";
 
@@ -52,12 +54,12 @@ export function SourceDrawer({ locale, source, onClose }: { locale: Locale; sour
         <div className="mt-3"><FreshnessIndicator locale={locale} state={source.freshness} /></div>
 
         <dl className="mt-5 space-y-3 text-sm">
-          <Row label={t(locale, "Issuing authority", "الجهة المصدرة")} value={source.authority ?? t(locale, "Unknown", "غير معروف")} />
-          <Row label={t(locale, "Classification", "التصنيف")} value={source.classification} />
+          <Row label={t(locale, "Issuing authority", "الجهة المُصدِرة")} value={source.authority ?? t(locale, "Unknown", "غير معروفة")} />
+          <Row label={term(locale, "sourceClassification")} value={classificationLabel(locale, source.classification)} />
           <Row label={t(locale, "Original language", "اللغة الأصلية")} value={source.language.toUpperCase()} />
-          <Row label={t(locale, "Version", "الإصدار")} value={String(source.version)} />
-          <Row label={t(locale, "Last verified", "آخر تحقق")} value={source.lastVerified ? new Date(source.lastVerified).toLocaleDateString(locale) : "—"} />
-          <Row label={t(locale, "Next review", "المراجعة التالية")} value={source.nextReview ? new Date(source.nextReview).toLocaleDateString(locale) : "—"} />
+          <Row label={t(locale, "Version", "الإصدار")} value={formatNumber(locale, source.version)} />
+          <Row label={term(locale, "lastVerified")} value={formatDate(locale, source.lastVerified)} />
+          <Row label={term(locale, "nextReview")} value={formatDate(locale, source.nextReview)} />
         </dl>
 
         <div className="mt-5 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3">

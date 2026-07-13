@@ -331,10 +331,49 @@ async function loadDependencies(pathwayIds: string[]) {
  */
 export async function buildEvaluationView(result: EvaluationRow) {
   const summary = result.summary as Record<string, unknown>;
+  // Centralized, bilingual evaluation disclaimer (the persisted one is EN only).
+  const evalDisclaimer = await getDisclaimer("EVALUATION");
   const pathwayIds = result.recommendations
     .map((r) => r.pathwayId)
     .filter((id): id is string => Boolean(id));
   const dependencies = await loadDependencies(pathwayIds);
+  // Localized pathway titles for display (read-side; avoids English rule-key
+  // titles leaking into the Arabic UI). No evaluation logic is affected.
+  const pathwayTitles = pathwayIds.length
+    ? await prisma.pathway.findMany({ where: { id: { in: pathwayIds } }, select: { id: true, titleEn: true, titleAr: true } })
+    : [];
+  const titleById = new Map(pathwayTitles.map((p) => [p.id, { en: p.titleEn, ar: p.titleAr }]));
+
+  // Localize authority names on sources (read-side) so the Arabic UI shows the
+  // Arabic authority name. Matches the persisted English name to its Arabic one.
+  const authorities = await prisma.authority.findMany({ select: { nameEn: true, nameAr: true } });
+  const authArByEn = new Map(authorities.map((a) => [a.nameEn, a.nameAr]));
+  const withAuthorityAr = (src: Record<string, unknown> | null | undefined) =>
+    src && typeof src === "object"
+      ? { ...src, authorityAr: typeof src.authority === "string" ? authArByEn.get(src.authority) ?? null : null }
+      : src;
+  const enrichReasoning = (reasoning: unknown) => {
+    if (!reasoning || typeof reasoning !== "object") return reasoning;
+    const r = reasoning as Record<string, unknown>;
+    if (!Array.isArray(r.sources)) return reasoning;
+    return { ...r, sources: (r.sources as Record<string, unknown>[]).map(withAuthorityAr) };
+  };
+
+  // Localized titles for excluded pathways (they carry a slug, not an id).
+  const excludedRaw = Array.isArray(summary.excludedPathways)
+    ? (summary.excludedPathways as Record<string, unknown>[])
+    : [];
+  const excludedSlugs = excludedRaw
+    .map((e) => e.pathwaySlug)
+    .filter((s): s is string => typeof s === "string");
+  const exPathways = excludedSlugs.length
+    ? await prisma.pathway.findMany({ where: { slug: { in: excludedSlugs } }, select: { slug: true, titleEn: true, titleAr: true } })
+    : [];
+  const titleBySlug = new Map(exPathways.map((p) => [p.slug, { en: p.titleEn, ar: p.titleAr }]));
+  const excludedEnriched = excludedRaw.map((e) => {
+    const t = typeof e.pathwaySlug === "string" ? titleBySlug.get(e.pathwaySlug) : undefined;
+    return { ...e, titleEn: t?.en ?? null, titleAr: t?.ar ?? null };
+  });
 
   return {
     id: result.id,
@@ -351,6 +390,8 @@ export async function buildEvaluationView(result: EvaluationRow) {
       ruleKey: r.ruleKey,
       ruleVersion: r.ruleVersion,
       pathwayId: r.pathwayId,
+      titleEn: r.pathwayId ? titleById.get(r.pathwayId)?.en ?? null : null,
+      titleAr: r.pathwayId ? titleById.get(r.pathwayId)?.ar ?? null : null,
       order: r.order,
       priorityScore: r.priorityScore,
       priorityFactors: r.priorityFactors,
@@ -358,16 +399,18 @@ export async function buildEvaluationView(result: EvaluationRow) {
       requiresVerification: r.requiresVerification,
       requiresProfessionalReview: r.requiresProfessionalReview,
       reason: r.reason,
-      reasoning: r.reasoning,
+      reasoning: enrichReasoning(r.reasoning),
       assumptions: r.assumptions,
       riskFactors: r.riskFactors,
     })),
     dependencies,
     assumptions: result.assumptions,
     risks: result.risks,
-    sources: result.sourcesSnapshot,
+    sources: Array.isArray(result.sourcesSnapshot)
+      ? (result.sourcesSnapshot as Record<string, unknown>[]).map(withAuthorityAr)
+      : result.sourcesSnapshot,
     nextActions: summary.nextActions ?? [],
-    excludedPathways: summary.excludedPathways ?? [],
+    excludedPathways: excludedEnriched,
     summary: {
       matchedRules: summary.matchedRules ?? 0,
       excludedRules: summary.excludedRules ?? 0,
@@ -376,7 +419,8 @@ export async function buildEvaluationView(result: EvaluationRow) {
       risks: summary.risks ?? 0,
       professionalReviewRequired: summary.professionalReviewRequired ?? false,
       officialVerificationRequired: summary.officialVerificationRequired ?? false,
-      disclaimer: summary.disclaimer ?? "",
+      disclaimer: evalDisclaimer.textEn,
+      disclaimerAr: evalDisclaimer.textAr,
     },
   };
 }

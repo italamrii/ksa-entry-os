@@ -1,5 +1,6 @@
 import { BadgeCheck, Scale, Clock3, CircleAlert, CircleCheck, CircleHelp } from "lucide-react";
-import { t } from "@/lib/i18n";
+import { term, type GlossaryKey } from "@/lib/i18n/glossary";
+import { formatScore } from "@/lib/i18n/format";
 import type { FreshnessState, Locale, PlanningIndicatorVM, VerificationState } from "@/lib/view-models/types";
 
 /** Meaning is never conveyed by color alone — each badge carries text + icon. */
@@ -9,7 +10,7 @@ export function VerificationBadge({ locale, state }: { locale: Locale; state: Ve
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300">
       <BadgeCheck className="h-3.5 w-3.5" aria-hidden />
-      {t(locale, "Official verification required", "يلزم تحقق رسمي")}
+      {term(locale, "officialVerificationRequired")}
     </span>
   );
 }
@@ -19,16 +20,16 @@ export function ProfessionalReviewBadge({ locale, state }: { locale: Locale; sta
   return (
     <span className="inline-flex items-center gap-1 rounded-full border border-[color-mix(in_srgb,var(--plum)_35%,transparent)] bg-[color-mix(in_srgb,var(--plum)_14%,transparent)] px-2 py-0.5 text-xs font-medium text-[color-mix(in_srgb,var(--warm-sand)_80%,var(--plum))]">
       <Scale className="h-3.5 w-3.5" aria-hidden />
-      {t(locale, "Professional review recommended", "يوصى بمراجعة مهنية")}
+      {term(locale, "professionalReviewRecommended")}
     </span>
   );
 }
 
-const FRESHNESS: Record<FreshnessState, { en: string; ar: string; className: string; Icon: React.ComponentType<{ className?: string }> }> = {
-  FRESH: { en: "Verified", ar: "محقق", className: "border-[color-mix(in_srgb,var(--success)_30%,transparent)] bg-[color-mix(in_srgb,var(--success)_10%,transparent)] text-[var(--success)]", Icon: CircleCheck },
-  REVIEW_DUE: { en: "Review due", ar: "المراجعة مستحقة", className: "border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] text-[var(--warning)]", Icon: Clock3 },
-  STALE: { en: "Outdated — re-verify", ar: "قديم — أعد التحقق", className: "border-[color-mix(in_srgb,var(--error)_30%,transparent)] bg-[color-mix(in_srgb,var(--error)_10%,transparent)] text-[var(--error)]", Icon: CircleAlert },
-  MISSING: { en: "No source", ar: "لا مصدر", className: "border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--muted)]", Icon: CircleHelp },
+const FRESHNESS: Record<FreshnessState, { key: GlossaryKey; className: string; Icon: React.ComponentType<{ className?: string }> }> = {
+  FRESH: { key: "verified", className: "border-[color-mix(in_srgb,var(--success)_30%,transparent)] bg-[color-mix(in_srgb,var(--success)_10%,transparent)] text-[var(--success)]", Icon: CircleCheck },
+  REVIEW_DUE: { key: "reviewDue", className: "border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--warning)_10%,transparent)] text-[var(--warning)]", Icon: Clock3 },
+  STALE: { key: "outdated", className: "border-[color-mix(in_srgb,var(--error)_30%,transparent)] bg-[color-mix(in_srgb,var(--error)_10%,transparent)] text-[var(--error)]", Icon: CircleAlert },
+  MISSING: { key: "noSource", className: "border-[var(--border-subtle)] bg-[var(--surface-muted)] text-[var(--muted)]", Icon: CircleHelp },
 };
 
 export function FreshnessIndicator({ locale, state }: { locale: Locale; state: FreshnessState }) {
@@ -37,7 +38,7 @@ export function FreshnessIndicator({ locale, state }: { locale: Locale; state: F
   return (
     <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium ${f.className}`}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
-      {t(locale, f.en, f.ar)}
+      {term(locale, f.key)}
     </span>
   );
 }
@@ -47,8 +48,8 @@ export function PlanningIndicator({ locale, planning }: { locale: Locale; planni
   return (
     <div>
       <div className="flex items-baseline justify-between gap-2">
-        <span className="text-xs font-medium text-[var(--muted)]">{t(locale, "Planning indicator", "مؤشر التخطيط")}</span>
-        <span className="text-sm font-semibold text-foreground">{pct}<span className="text-xs text-[var(--muted)]">/100</span></span>
+        <span className="text-xs font-medium text-[var(--muted)]">{term(locale, "planningIndicator")}</span>
+        <span className="text-sm font-semibold text-foreground" dir="ltr">{formatScore(locale, pct)}</span>
       </div>
       <div
         className="mt-1 h-1.5 overflow-hidden rounded-full bg-[var(--surface-muted)]"
@@ -56,7 +57,7 @@ export function PlanningIndicator({ locale, planning }: { locale: Locale; planni
         aria-valuenow={pct}
         aria-valuemin={0}
         aria-valuemax={100}
-        aria-label={t(locale, "Planning indicator", "مؤشر التخطيط")}
+        aria-label={term(locale, "planningIndicator")}
       >
         <div className="h-full rounded-full bg-[var(--accent)]" style={{ width: `${pct}%` }} />
       </div>

@@ -10,6 +10,8 @@ import type {
   RiskVM,
   SourceVM,
 } from "@/lib/view-models/types";
+import { term, levelLabel, classificationLabel } from "@/lib/i18n/glossary";
+import { formatDate } from "@/lib/i18n/format";
 import { NarrativePanel, EvidencePanel, DecisionStrip } from "./primitives";
 import { FreshnessIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
 
@@ -17,8 +19,8 @@ export function CompanyContext({ locale, provided, inferred }: { locale: Locale;
   return (
     <NarrativePanel id="context" title={t(locale, "Company context", "سياق الشركة")} description={t(locale, "What you told us, and what the platform inferred.", "ما أخبرتنا به وما استنتجته المنصة.")}>
       <div className="grid gap-4 lg:grid-cols-2">
-        <FactColumn locale={locale} heading={t(locale, "You provided", "قدّمتَ")} facts={provided} tone="provided" />
-        <FactColumn locale={locale} heading={t(locale, "Platform inferred", "استنتجت المنصة")} facts={inferred} tone="inferred" />
+        <FactColumn locale={locale} heading={term(locale, "userProvided")} facts={provided} tone="provided" />
+        <FactColumn locale={locale} heading={term(locale, "platformInferred")} facts={inferred} tone="inferred" />
       </div>
     </NarrativePanel>
   );
@@ -38,7 +40,7 @@ function FactColumn({ locale, heading, facts, tone }: { locale: Locale; heading:
               <dd className="flex items-center gap-2 font-medium text-foreground">
                 {f.value}
                 {tone === "inferred" && (
-                  <span className="rounded border border-[var(--border-subtle)] px-1 text-[10px] text-[var(--muted)]">{t(locale, "inferred", "مُستنتج")}</span>
+                  <span className="rounded border border-[var(--border-subtle)] px-1 text-[10px] text-[var(--muted)]">{term(locale, "inferred")}</span>
                 )}
               </dd>
             </div>
@@ -117,7 +119,7 @@ export function AssumptionsPanel({ locale, assumptions, onDecide }: { locale: Lo
               <EvidencePanel summary={t(locale, "Why & impact if false", "السبب والأثر إذا كان خاطئًا")}>
                 <p>{t(locale, "Confidence: ", "الثقة: ")}{a.confidence}</p>
                 <p className="mt-1">{t(locale, "If false: ", "إذا كان خاطئًا: ")}{a.impactIfFalse}</p>
-                {a.affectedPathwayKey && <p className="mt-1">{t(locale, "Affects: ", "يؤثر على: ")}{a.affectedPathwayKey}</p>}
+                {a.affectedPathwayLabel && <p className="mt-1">{t(locale, "Affects: ", "يؤثر على: ")}{a.affectedPathwayLabel}</p>}
               </EvidencePanel>
               <div className="mt-3 flex gap-2">
                 <button type="button" onClick={onDecide ? () => onDecide(a.key, "CONFIRMED") : undefined} className="rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-medium text-emerald-300 outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/50">
@@ -139,7 +141,7 @@ export function RiskLayer({ locale, risks }: { locale: Locale; risks: RiskVM[] }
   const sevOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 } as const;
   const sorted = [...risks].sort((a, b) => sevOrder[a.severity] - sevOrder[b.severity]);
   return (
-    <NarrativePanel id="risks" title={t(locale, "Risks & complexity", "المخاطر والتعقيد")} description={t(locale, "Planning risks — not legal conclusions.", "مخاطر تخطيطية — وليست استنتاجات قانونية.")}>
+    <NarrativePanel id="risks" title={term(locale, "risks")} description={t(locale, "Planning risks — not legal conclusions.", "مخاطر تخطيطية، وليست استنتاجات قانونية.")}>
       {sorted.length === 0 ? (
         <p className="surface-panel rounded-2xl p-6 text-sm text-[var(--muted)]">{t(locale, "No notable risks surfaced.", "لم تظهر مخاطر بارزة.")}</p>
       ) : (
@@ -161,7 +163,7 @@ export function RiskLayer({ locale, risks }: { locale: Locale; risks: RiskVM[] }
 }
 
 function sevLabel(locale: Locale, s: RiskVM["severity"]) {
-  return t(locale, { LOW: "Low", MEDIUM: "Medium", HIGH: "High" }[s], { LOW: "منخفض", MEDIUM: "متوسط", HIGH: "مرتفع" }[s]);
+  return levelLabel(locale, s);
 }
 function sevClass(s: RiskVM["severity"]) {
   return s === "HIGH" ? "border border-red-500/30 bg-red-500/10 text-red-300" : s === "MEDIUM" ? "border border-amber-500/30 bg-amber-500/10 text-amber-300" : "border border-[var(--border-subtle)] text-[var(--muted)]";
@@ -211,8 +213,8 @@ export function ReportWorkspace({ locale, report, assessmentId, canExport }: { l
           ]}
         />
         <p className="mt-4 text-sm text-[var(--muted)]">
-          <span className="font-medium text-foreground">{t(locale, "Information cutoff: ", "تاريخ توقف المعلومات: ")}</span>
-          {report.informationCutoff ? new Date(report.informationCutoff).toLocaleDateString(locale) : "—"}
+          <span className="font-medium text-foreground">{term(locale, "informationCutoff")}: </span>
+          {formatDate(locale, report.informationCutoff)}
         </p>
         <p className="mt-2 text-xs leading-relaxed text-[var(--muted)]">{report.disclaimer}</p>
         {canExport && assessmentId && (
@@ -233,7 +235,7 @@ export function SourceList({ locale, sources, onOpenSource }: { locale: Locale; 
         <li key={s.id} className="surface-panel flex items-center justify-between gap-3 rounded-xl p-4">
           <div className="min-w-0">
             <p className="truncate text-sm font-medium text-foreground">{s.title}</p>
-            <p className="text-xs text-[var(--muted)]">{s.authority ?? t(locale, "Unknown authority", "جهة غير معروفة")} · {s.classification}</p>
+            <p className="text-xs text-[var(--muted)]">{s.authority ?? t(locale, "Unknown authority", "جهة غير معروفة")} · {classificationLabel(locale, s.classification)}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <FreshnessIndicator locale={locale} state={s.freshness} />

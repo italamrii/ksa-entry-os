@@ -1,4 +1,5 @@
 import { t } from "@/lib/i18n";
+import { term, levelLabel } from "@/lib/i18n/glossary";
 import type { Locale, PathwayVM, SourceVM } from "@/lib/view-models/types";
 import { NarrativePanel, EvidencePanel } from "./primitives";
 import { PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
@@ -39,7 +40,7 @@ export function PathwayNode({ locale, pathway, onFocusPathway, onOpenSource, act
         <ProfessionalReviewBadge locale={locale} state={pathway.verification} />
         {pathway.complexity && (
           <span className="inline-flex items-center rounded-full border border-[var(--border-subtle)] px-2 py-0.5 text-xs text-[var(--muted)]">
-            {t(locale, "Complexity", "التعقيد")}: {pathway.complexity}
+            {term(locale, "complexity")}: {levelLabel(locale, pathway.complexity)}
           </span>
         )}
       </div>
