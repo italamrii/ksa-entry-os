@@ -19,7 +19,6 @@ import { PremiumCard } from "@/components/marketing/premium-card";
 import { HeroPreview } from "@/components/marketing/hero-preview";
 import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Reveal } from "@/components/marketing/reveal";
-import { SaudiTopo } from "@/components/brand/saudi-topo";
 import { PRICING } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
 import { getLanding, landingContent } from "@/lib/i18n/content";
@@ -45,15 +44,31 @@ export default async function HomePage({
     <div dir={dir} className="flex min-h-screen flex-col">
       <SiteHeader locale={locale} isAuthenticated={!!user} isAdmin={user?.role === "ADMIN"} />
 
-      <section className="hero-mesh relative overflow-hidden px-4 pb-8 pt-12 sm:px-6 lg:px-8 lg:pb-16 lg:pt-20">
-        <SaudiTopo className="pointer-events-none absolute inset-y-0 end-[-8%] hidden w-[58%] opacity-35 lg:block" glow />
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
+      <section className="hero-cinema relative overflow-hidden px-4 pb-10 pt-8 sm:px-6 lg:px-8 lg:pb-14 lg:pt-10">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_60%_50%_at_70%_45%,color-mix(in_srgb,var(--accent)_14%,transparent),transparent_70%)]" />
+        <div className="relative mx-auto grid max-w-7xl items-center gap-8 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)] lg:gap-10 xl:gap-12">
           <Reveal>
-            <p className="text-overline mb-4">{L.hero.overline}</p>
-            <h1 className="text-headline text-foreground sm:text-[2.35rem] lg:text-[2.65rem]">{L.hero.title}</h1>
-            <p className="text-subhead mt-6 text-[var(--muted)]">{L.hero.subtitle}</p>
-            <p className="mt-4 text-sm text-[var(--muted)]/80">{L.hero.audience}</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <p className="text-overline mb-3">{L.hero.overline}</p>
+            <h1 className="max-w-sm text-[1.2rem] font-semibold leading-snug tracking-tight text-foreground sm:text-[1.4rem] lg:text-[1.5rem]">
+              {L.hero.title}
+            </h1>
+            <p className="mt-3 max-w-sm text-sm leading-relaxed text-[var(--muted)]">
+              {L.hero.subtitle}
+            </p>
+            <ul className="mt-5 flex flex-wrap gap-2">
+              {(locale === "ar"
+                ? ["مسارات رسمية", "ذكاء تنفيذي", "مصادر موثّقة"]
+                : ["Official pathways", "Executive intelligence", "Verified sources"]
+              ).map((chip) => (
+                <li
+                  key={chip}
+                  className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-muted)]/50 px-2.5 py-1 text-[11px] text-foreground/90"
+                >
+                  {chip}
+                </li>
+              ))}
+            </ul>
+            <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:items-center">
               <Link href={localeHref("/register", locale)}>
                 <Button size="lg" className="cta-glow w-full gap-2 sm:w-auto">
                   {L.hero.ctaPrimary}
@@ -66,8 +81,9 @@ export default async function HomePage({
                 </Button>
               </Link>
             </div>
+            <p className="mt-4 max-w-sm text-xs text-[var(--muted)]/75">{L.hero.audience}</p>
           </Reveal>
-          <Reveal delay={150}>
+          <Reveal delay={120}>
             <HeroPreview locale={locale} />
           </Reveal>
         </div>

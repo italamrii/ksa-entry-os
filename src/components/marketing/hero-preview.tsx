@@ -1,143 +1,109 @@
 import type { Locale } from "@/lib/i18n";
-import { SaudiTopo } from "@/components/brand/saudi-topo";
+import { SaudiMap3D } from "@/components/brand/saudi-topo";
 
 /**
- * Cropped live-workspace preview for the landing hero — mirrors IMAGE B composition:
- * slim rails + executive strip + horizontal pathway stages over topography + source rail.
+ * Landing / workspace-aligned hero composition:
+ * dominant 3D Saudi map with regional hubs + floating executive intelligence strip.
  */
 export function HeroPreview({ locale }: { locale: Locale }) {
   const isAr = locale === "ar";
-  const stages = isAr
+
+  const signals = isAr
     ? [
-        { n: 1, t: "سياق الشركة", d: "SaaS أجنبية" },
-        { n: 2, t: "هدف الدخول", d: "تأسيس كيان" },
-        { n: 3, t: "شركة أجنبية مملوكة بالكامل", d: "التوصية الأساسية", focus: true },
-        { n: 4, t: "الجهات", d: "٩ جهات" },
-        { n: 5, t: "الاعتمادات", d: "١٢ موافقة" },
-        { n: 6, t: "المصادر", d: "١٤ متحقق" },
+        { k: "مسارات", v: "مُعدَّة" },
+        { k: "جهات", v: "٩" },
+        { k: "مصادر", v: "١٤" },
       ]
     : [
-        { n: 1, t: "Company Context", d: "Foreign SaaS" },
-        { n: 2, t: "Entry Objective", d: "Establish entity" },
-        { n: 3, t: "Wholly Foreign-Owned", d: "Primary recommendation", focus: true },
-        { n: 4, t: "Authorities", d: "9 authorities" },
-        { n: 5, t: "Dependencies", d: "12 approvals" },
-        { n: 6, t: "Official Sources", d: "14 verified" },
+        { k: "Pathways", v: "Mapped" },
+        { k: "Authorities", v: "9" },
+        { k: "Sources", v: "14" },
       ];
 
-  const sources = isAr
-    ? ["وزارة الاستثمار", "مركز الأعمال", "الزكاة والضريبة"]
-    : ["MISA", "Saudi Business Center", "ZATCA"];
+  const stages = isAr
+    ? ["سياق", "هدف", "مسار", "جهات", "اعتماد", "مصادر"]
+    : ["Context", "Objective", "Pathway", "Authorities", "Deps", "Sources"];
 
   return (
     <div
       dir={isAr ? "rtl" : "ltr"}
-      className="relative mx-auto w-full max-w-2xl animate-fade-in lg:max-w-none"
+      className="relative mx-auto w-full max-w-3xl lg:max-w-none"
       aria-hidden
     >
-      <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[#0c0d10] shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
-        <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_6.5rem] sm:grid-cols-[3.25rem_minmax(0,1fr)_7.5rem]">
-          {/* Left rail */}
-          <div className="flex flex-col items-center gap-2 border-e border-[var(--border-subtle)] bg-[#0a0b0e] py-3">
-            <span className="h-6 w-6 rounded-md bg-[color-mix(in_srgb,var(--accent)_35%,transparent)]" />
-            {[0, 1, 2, 3, 4].map((i) => (
+      {/* Map centerpiece */}
+      <div className="relative mx-auto aspect-[5/4] w-full max-w-xl sm:max-w-2xl lg:max-w-none lg:aspect-[6/5]">
+        <div className="pointer-events-none absolute inset-[8%] rounded-full bg-[radial-gradient(circle,color-mix(in_srgb,var(--accent)_22%,transparent),transparent_68%)] blur-2xl" />
+        <SaudiMap3D
+          className="absolute inset-0"
+          variant="hero"
+          showLabels
+          locale={isAr ? "ar" : "en"}
+          focusHub="riyadh"
+        />
+
+        {/* Floating intelligence HUD — top */}
+        <div className="absolute start-0 top-2 z-10 max-w-[11.5rem] rounded-lg border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_82%,transparent)] px-3 py-2 shadow-[0_12px_36px_rgba(0,0,0,0.45)] backdrop-blur-sm sm:start-2 sm:top-4 sm:max-w-[13rem]">
+          <p className="text-[9px] font-semibold uppercase tracking-[0.14em] text-[var(--highlight)]">
+            {isAr ? "ذكاء الدخول" : "Entry intelligence"}
+          </p>
+          <p className="mt-1 text-[11px] font-semibold leading-snug text-foreground">
+            {isAr ? "تسلسل رسمي للمملكة" : "Official KSA pathway sequence"}
+          </p>
+          <div className="mt-2 flex flex-wrap gap-1">
+            {signals.map((s) => (
               <span
-                key={i}
-                className={`h-5 w-5 rounded ${i === 0 ? "bg-[color-mix(in_srgb,var(--accent)_45%,transparent)] ring-1 ring-[var(--accent)]" : "bg-[var(--surface-muted)]"}`}
-              />
+                key={s.k}
+                className="rounded border border-[var(--border-subtle)] bg-black/35 px-1.5 py-0.5 text-[8px] text-[var(--muted)]"
+              >
+                <span className="text-[var(--accent-bright)]">{s.v}</span> {s.k}
+              </span>
             ))}
           </div>
+        </div>
 
-          {/* Main stage */}
-          <div className="relative min-w-0 overflow-hidden">
-            <div className="relative border-b border-[var(--border-subtle)] px-3 py-2.5">
-              <SaudiTopo className="pointer-events-none absolute inset-y-0 end-0 w-1/2 opacity-40" glow />
-              <p className="relative text-[8px] font-semibold uppercase tracking-[0.14em] text-[var(--highlight)]">
-                {isAr ? "الملخص التنفيذي" : "Executive summary"}
+        {/* Pathway micro-rail — bottom overlay on map */}
+        <div className="absolute inset-x-2 bottom-1 z-10 sm:inset-x-6 sm:bottom-3">
+          <div className="rounded-lg border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_78%,transparent)] px-2 py-2 shadow-[0_16px_40px_rgba(0,0,0,0.5)] backdrop-blur-sm sm:px-3">
+            <div className="mb-1.5 flex items-center justify-between gap-2">
+              <p className="text-[8px] font-semibold uppercase tracking-[0.12em] text-[var(--highlight)]">
+                {isAr ? "لوحة المسار" : "Pathway canvas"}
               </p>
-              <p className="relative mt-1 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground">
-                {isAr
-                  ? "جاهزية مرتفعة للتأسيس في السعودية خلال ٦–٩ أشهر نموذجية"
-                  : "High planning readiness to establish in KSA with a 6–9 month typical setup"}
+              <p className="text-[8px] text-[var(--accent-bright)]">
+                {isAr ? "التوصية · وادي الرياض" : "Focus · Riyadh hub"}
               </p>
-              <div className="relative mt-2 flex gap-1.5">
-                {["78%", isAr ? "متوسط" : "Medium", isAr ? "٦–٩ أشهر" : "6–9 mo"].map((m) => (
-                  <span
-                    key={m}
-                    className="rounded border border-[var(--border-subtle)] bg-black/30 px-1.5 py-0.5 text-[8px] text-[var(--muted)]"
-                  >
-                    {m}
-                  </span>
-                ))}
-              </div>
             </div>
-
-            <div className="relative px-2 py-3">
-              <SaudiTopo className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] w-full opacity-55" glow />
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0c0d10]/80 via-transparent to-[#0c0d10]/70" />
-              <div className="relative flex items-end justify-between gap-1">
-                {stages.map((s) => (
-                  <div
-                    key={s.n}
-                    className={`min-w-0 flex-1 rounded-md border px-1 py-1.5 ${
-                      s.focus
-                        ? "border-[color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] shadow-[0_0_12px_rgba(47,158,110,0.25)]"
-                        : "border-[var(--border-subtle)] bg-black/35"
+            <ol className="flex items-stretch justify-between gap-1">
+              {stages.map((label, i) => {
+                const focus = i === 2;
+                return (
+                  <li
+                    key={label}
+                    className={`min-w-0 flex-1 rounded-md border px-1 py-1.5 text-center ${
+                      focus
+                        ? "border-[color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--accent)_18%,transparent)]"
+                        : "border-[var(--border-subtle)] bg-black/30"
                     }`}
                   >
                     <span
-                      className={`mb-1 flex h-4 w-4 items-center justify-center rounded-full text-[7px] font-bold ${
-                        s.focus ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-muted)] text-[var(--muted)]"
+                      className={`mx-auto mb-1 flex h-4 w-4 items-center justify-center rounded-full text-[7px] font-bold ${
+                        focus ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-muted)] text-[var(--muted)]"
                       }`}
                     >
-                      {s.n}
+                      {i + 1}
                     </span>
-                    <p className="line-clamp-2 text-[7px] font-semibold leading-tight text-foreground sm:text-[8px]">
-                      {s.t}
-                    </p>
-                    <p className="mt-0.5 line-clamp-1 text-[6px] text-[var(--muted)] sm:text-[7px]">{s.d}</p>
-                    {s.focus && (
-                      <span className="mx-auto mt-1 block h-6 w-px bg-gradient-to-b from-[var(--accent-bright)] to-transparent" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-3 gap-px border-t border-[var(--border-subtle)] bg-[var(--border-subtle)]">
-              {(isAr
-                ? ["افتراضات", "المخاطر", "إجراءات"]
-                : ["Assumptions", "Risks", "Actions"]
-              ).map((label) => (
-                <div key={label} className="bg-[#12141a] px-2 py-2">
-                  <p className="text-[7px] font-semibold text-[var(--muted)]">{label}</p>
-                  <div className="mt-1 space-y-1">
-                    <div className="h-1 rounded bg-[var(--accent)]/40" />
-                    <div className="h-1 w-2/3 rounded bg-white/10" />
-                  </div>
-                </div>
-              ))}
-            </div>
+                    <p className="truncate text-[7px] font-semibold text-foreground sm:text-[8px]">{label}</p>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
+        </div>
 
-          {/* Source rail */}
-          <div className="border-s border-[var(--border-subtle)] bg-[#0a0b0e] px-1.5 py-2">
-            <p className="px-1 text-[7px] font-semibold uppercase tracking-wider text-[var(--highlight)]">
-              {isAr ? "مصادر" : "Sources"}
-            </p>
-            <p className="mt-0.5 px-1 text-[6px] text-[var(--muted)]">14/14</p>
-            <ul className="mt-2 space-y-1">
-              {sources.map((name) => (
-                <li
-                  key={name}
-                  className="rounded border border-[var(--border-subtle)] bg-[#14161c] px-1.5 py-1"
-                >
-                  <p className="truncate text-[7px] font-medium text-foreground">{name}</p>
-                  <p className="text-[6px] text-[var(--accent-bright)]">{isAr ? "متحقق" : "Verified"}</p>
-                </li>
-              ))}
-            </ul>
-          </div>
+        {/* Source chip — side */}
+        <div className="absolute end-1 top-[38%] z-10 hidden max-w-[7.5rem] rounded-md border border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_84%,transparent)] px-2 py-1.5 text-[8px] shadow-lg backdrop-blur-sm sm:block">
+          <p className="font-semibold text-[var(--highlight)]">{isAr ? "مصادر" : "Sources"}</p>
+          <p className="mt-0.5 text-foreground/90">MISA · ZATCA · SBC</p>
+          <p className="mt-0.5 text-[var(--accent-bright)]">{isAr ? "١٤ متحقق" : "14 verified"}</p>
         </div>
       </div>
     </div>

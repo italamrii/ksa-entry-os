@@ -15,7 +15,7 @@ import type {
 } from "@/lib/view-models/types";
 import { NarrativePanel, EvidencePanel } from "./primitives";
 import { PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
-import { SaudiTopo } from "@/components/brand/saudi-topo";
+import { SaudiMap3D } from "@/components/brand/saudi-topo";
 import { cn } from "@/lib/utils";
 
 interface PathwayHandlers {
@@ -268,18 +268,22 @@ export function PathwayCanvas({
         <DependencyLane locale={locale} dependencies={dependencies} pathways={pathways} />
       ) : (
         <div className="pathway-stage relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
-          {/* Topography layer — dominant underlay */}
-          <div className="pointer-events-none absolute inset-x-[-5%] bottom-[-8%] h-[68%] origin-bottom scale-110 [transform:perspective(900px)_rotateX(18deg)] motion-reduce:[transform:none]">
-            <SaudiTopo className="h-full w-full opacity-70" glow />
+          {/* Dominant 3D Saudi map underlay — kept above stage floor for hub readability */}
+          <div className="pointer-events-none absolute inset-x-0 bottom-[-4%] top-[8%] z-0 flex items-center justify-center overflow-hidden">
+            <SaudiMap3D
+              className="h-[120%] w-[110%] max-w-5xl opacity-100"
+              variant="canvas"
+              focusHub="riyadh"
+              showLabels={false}
+            />
           </div>
           <div
-            className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,13,16,0.55)_0%,rgba(12,13,16,0.15)_42%,rgba(12,13,16,0.72)_100%)]"
+            className="pointer-events-none absolute inset-0 z-[1] bg-[linear-gradient(180deg,rgba(12,13,16,0.55)_0%,rgba(12,13,16,0.05)_28%,rgba(12,13,16,0.08)_50%,rgba(12,13,16,0.65)_100%)]"
             aria-hidden
           />
-          <div className="pointer-events-none absolute inset-0 topo-grid opacity-40" aria-hidden />
 
           {/* Desktop horizontal stage flow */}
-          <div className="relative hidden min-h-[22rem] lg:block">
+          <div className="relative z-[2] hidden min-h-[26rem] lg:block">
             <svg
               className="pointer-events-none absolute inset-x-[4%] top-[5.5rem] h-16 w-[92%]"
               viewBox="0 0 1000 80"

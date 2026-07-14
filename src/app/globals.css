@@ -320,6 +320,24 @@ body {
     radial-gradient(at 55% 92%, rgba(15, 79, 60, 0.08) 0, transparent 48%);
 }
 
+.hero-cinema {
+  background-image:
+    radial-gradient(ellipse 55% 50% at 72% 48%, rgba(47, 158, 110, 0.16) 0, transparent 55%),
+    radial-gradient(ellipse 35% 40% at 12% 20%, rgba(196, 165, 116, 0.07) 0, transparent 50%),
+    linear-gradient(180deg, #0c0d10 0%, #101218 55%, #0c0d10 100%);
+  min-height: min(88vh, 52rem);
+}
+
+.saudi-map-stage {
+  isolation: isolate;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .saudi-map-stage {
+    transform: none !important;
+  }
+}
+
 .topo-grid {
   background-image:
     linear-gradient(color-mix(in srgb, var(--border-subtle) 80%, transparent) 1px, transparent 1px),
@@ -528,9 +546,9 @@ body {
 
 .pathway-stage {
   background:
-    radial-gradient(ellipse 55% 40% at 50% 78%, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
-    linear-gradient(180deg, #15181f 0%, #101218 48%, color-mix(in srgb, var(--forest) 22%, #0c0d10) 100%);
-  min-height: 22rem;
+    radial-gradient(ellipse 60% 45% at 50% 82%, color-mix(in srgb, var(--accent) 22%, transparent), transparent),
+    linear-gradient(180deg, #12151c 0%, #0e1218 48%, color-mix(in srgb, var(--forest) 28%, #0c0d10) 100%);
+  min-height: 26rem;
 }
 
 .source-rail {

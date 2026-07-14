@@ -3,7 +3,7 @@ import { term, levelLabel } from "@/lib/i18n/glossary";
 import { formatDate, formatNumber, formatScore } from "@/lib/i18n/format";
 import type { ExecutiveSummaryVM, Locale, PlanningIndicatorVM } from "@/lib/view-models/types";
 import { FreshnessIndicator, PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
-import { SaudiTopo } from "@/components/brand/saudi-topo";
+import { SaudiMap3D } from "@/components/brand/saudi-topo";
 
 /**
  * Executive Summary Strip — IMAGE B top band: bilingual headline + planning ring + fact rail.
@@ -21,9 +21,10 @@ export function ExecutiveSummary({ locale, summary }: { locale: Locale; summary:
   return (
     <section id="overview" aria-label={t(locale, "Executive summary", "الملخص التنفيذي")} className="scroll-mt-24">
       <div className="exec-strip relative overflow-hidden">
-        <SaudiTopo
-          className="pointer-events-none absolute inset-y-[-10%] end-[-6%] w-[52%] max-w-2xl opacity-55 motion-reduce:opacity-30"
-          glow
+        <SaudiMap3D
+          className="pointer-events-none absolute inset-y-[-12%] end-[-8%] w-[58%] max-w-2xl opacity-70 motion-reduce:opacity-40"
+          variant="compact"
+          focusHub="riyadh"
         />
         <div className="pointer-events-none absolute inset-0 topo-grid opacity-30" aria-hidden />
 
