@@ -50,7 +50,7 @@ export default async function HomePage({
         <div className="relative mx-auto grid max-w-7xl items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <Reveal>
             <p className="text-overline mb-4">{L.hero.overline}</p>
-            <h1 className="text-display text-foreground">{L.hero.title}</h1>
+            <h1 className="text-headline text-foreground sm:text-[2.35rem] lg:text-[2.65rem]">{L.hero.title}</h1>
             <p className="text-subhead mt-6 text-[var(--muted)]">{L.hero.subtitle}</p>
             <p className="mt-4 text-sm text-[var(--muted)]/80">{L.hero.audience}</p>
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">

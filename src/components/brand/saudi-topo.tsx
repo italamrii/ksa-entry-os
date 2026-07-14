@@ -48,28 +48,42 @@ export function SaudiTopo({
         filter={glow ? "url(#topo-glow)" : undefined}
       />
 
-      {/* Contour lines */}
-      <path d="M160 180c80-28 170-36 260-20 70 12 140 48 180 96" stroke="#2f9e6e" strokeOpacity="0.22" strokeWidth="1" />
-      <path d="M180 240c90-20 190-24 280-4 60 14 118 46 150 86" stroke="#c4a574" strokeOpacity="0.18" strokeWidth="1" />
-      <path d="M200 300c84-12 180-10 260 18 52 18 98 52 118 92" stroke="#2f9e6e" strokeOpacity="0.16" strokeWidth="1" />
+      {/* Network lattice — denser for readable topography */}
+      <path d="M160 180c80-28 170-36 260-20 70 12 140 48 180 96" stroke="#2f9e6e" strokeOpacity="0.38" strokeWidth="1.25" />
+      <path d="M180 240c90-20 190-24 280-4 60 14 118 46 150 86" stroke="#c4a574" strokeOpacity="0.32" strokeWidth="1.25" />
+      <path d="M200 300c84-12 180-10 260 18 52 18 98 52 118 92" stroke="#2f9e6e" strokeOpacity="0.28" strokeWidth="1.25" />
+      <path d="M240 150c100-10 210 8 300 55 70 36 130 95 145 155" stroke="#3db882" strokeOpacity="0.2" strokeWidth="1" />
 
       {/* Network nodes (market centres — abstract) */}
-      <circle cx="320" cy="210" r="3.5" fill="#c4a574" fillOpacity="0.85" />
-      <circle cx="420" cy="250" r="3" fill="#2f9e6e" fillOpacity="0.7" />
-      <circle cx="500" cy="190" r="2.5" fill="#d8cbb4" fillOpacity="0.6" />
-      <circle cx="280" cy="300" r="2.5" fill="#2f9e6e" fillOpacity="0.55" />
-      <path d="M320 210L420 250L500 190M420 250L280 300" stroke="#c4a574" strokeOpacity="0.28" strokeWidth="1" />
+      <circle cx="320" cy="210" r="4.5" fill="#c4a574" fillOpacity="0.95" />
+      <circle cx="420" cy="250" r="4" fill="#2f9e6e" fillOpacity="0.85" />
+      <circle cx="500" cy="190" r="3.5" fill="#d8cbb4" fillOpacity="0.75" />
+      <circle cx="280" cy="300" r="3.5" fill="#2f9e6e" fillOpacity="0.7" />
+      <circle cx="380" cy="320" r="3" fill="#c4a574" fillOpacity="0.55" />
+      <path d="M320 210L420 250L500 190M420 250L280 300L380 320L420 250" stroke="#c4a574" strokeOpacity="0.45" strokeWidth="1.25" />
 
-      {/* Latitude lattice */}
-      {Array.from({ length: 6 }).map((_, i) => (
+      {/* Perspective grid */}
+      {Array.from({ length: 8 }).map((_, i) => (
         <line
-          key={i}
-          x1="140"
-          y1={140 + i * 40}
-          x2="660"
-          y2={150 + i * 42}
-          stroke="#f3efe6"
-          strokeOpacity="0.04"
+          key={`h-${i}`}
+          x1="120"
+          y1={130 + i * 36}
+          x2="680"
+          y2={145 + i * 38}
+          stroke="#3db882"
+          strokeOpacity="0.09"
+          strokeWidth="1"
+        />
+      ))}
+      {Array.from({ length: 10 }).map((_, i) => (
+        <line
+          key={`v-${i}`}
+          x1={160 + i * 52}
+          y1="120"
+          x2={140 + i * 58}
+          y2="400"
+          stroke="#3db882"
+          strokeOpacity="0.07"
           strokeWidth="1"
         />
       ))}

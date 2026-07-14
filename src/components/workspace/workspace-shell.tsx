@@ -18,12 +18,12 @@ import {
 } from "./panels";
 import { NarrativePanel } from "./primitives";
 import { SourceDrawer } from "./source-drawer";
+import { SourceRail } from "./source-rail";
 import { AppShell } from "@/components/layout/app-shell";
-import { FreshnessIndicator } from "./badges";
 
 /**
- * Spatial executive decision workspace.
- * Composition: product rail → summary strip → pathway canvas → decision modules → evidence rail.
+ * Spatial executive decision workspace aligned to approved reference (IMAGE B).
+ * Left rail → summary strip → pathway canvas → decision band → permanent source rail.
  */
 export function WorkspaceShell({
   vm,
@@ -70,39 +70,58 @@ export function WorkspaceShell({
         companyName={vm.summary.companyName}
         stageClassName="min-w-0"
       >
-        <div className="mx-auto grid w-full min-w-0 max-w-[1600px] gap-0 xl:grid-cols-[minmax(0,1fr)_18rem]">
-          <div className="min-w-0 space-y-8 px-4 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-full min-w-0 max-w-[1680px] gap-0 xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="min-w-0 space-y-5 px-3 py-4 sm:px-5 lg:space-y-6 lg:px-6 lg:py-5">
             <ExecutiveSummary locale={locale} summary={vm.summary} />
 
             <PathwayCanvas
               locale={locale}
               pathways={vm.includedPathways}
               dependencies={vm.dependencies}
+              authorities={vm.authorities}
+              sources={vm.sources}
+              summary={vm.summary}
+              context={vm.context}
               onFocusPathway={setActivePathwayKey}
               onOpenSource={setOpenSource}
               activePathwayKey={activePathwayKey}
             />
 
-            {/* Integrated decision modules — one band, not a card grid */}
             <section
               aria-label={t(locale, "Decision modules", "وحدات القرار")}
-              className="decision-band grid gap-px overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)] bg-[var(--border-subtle)] lg:grid-cols-3"
+              className="decision-band grid gap-px overflow-hidden rounded-lg border border-[var(--border-subtle)] bg-[var(--border-subtle)] lg:grid-cols-3"
             >
-              <div id="assumptions" className="scroll-mt-24 bg-[var(--card)] p-5">
+              <div id="assumptions" className="scroll-mt-24 bg-[var(--card)] p-4 sm:p-5">
                 <AssumptionsPanel locale={locale} assumptions={vm.assumptions} onDecide={onDecide} embedded />
               </div>
-              <div id="risks" className="scroll-mt-24 bg-[var(--card)] p-5">
+              <div id="risks" className="scroll-mt-24 bg-[var(--card)] p-4 sm:p-5">
                 <RiskLayer locale={locale} risks={vm.risks} embedded />
               </div>
-              <div id="next-actions" className="scroll-mt-24 bg-[var(--card)] p-5">
+              <div id="next-actions" className="scroll-mt-24 bg-[var(--card)] p-4 sm:p-5">
                 <NextActionFlow locale={locale} actions={vm.nextActions} embedded />
               </div>
             </section>
 
-            <CompanyContext locale={locale} provided={vm.context.provided} inferred={vm.context.inferred} />
-            <PathwayComparison locale={locale} pathways={vm.includedPathways} />
-            <ExcludedPathways locale={locale} pathways={vm.excludedPathways} />
-            <AuthorityMatrix locale={locale} authorities={vm.authorities} />
+            <details className="group rounded-lg border border-[var(--border-subtle)] bg-[var(--card)] open:pb-2">
+              <summary className="cursor-pointer list-none px-4 py-3 text-sm font-semibold text-foreground outline-none marker:content-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] [&::-webkit-details-marker]:hidden">
+                {t(locale, "Additional workspace detail", "تفاصيل إضافية لمساحة العمل")}
+                <span className="ms-2 text-xs font-normal text-[var(--muted)]">
+                  {t(locale, "Context, authorities, exclusions", "السياق والجهات والاستبعادات")}
+                </span>
+              </summary>
+              <div className="space-y-6 border-t border-[var(--border-subtle)] px-4 py-4">
+                <CompanyContext locale={locale} provided={vm.context.provided} inferred={vm.context.inferred} />
+                <PathwayComparison locale={locale} pathways={vm.includedPathways} />
+                <ExcludedPathways locale={locale} pathways={vm.excludedPathways} />
+                <AuthorityMatrix locale={locale} authorities={vm.authorities} />
+                <ReportWorkspace
+                  locale={locale}
+                  report={vm.report}
+                  assessmentId={assessmentId}
+                  canExport={canExport}
+                />
+              </div>
+            </details>
 
             <NarrativePanel
               id="sources"
@@ -121,68 +140,18 @@ export function WorkspaceShell({
               )}
             </NarrativePanel>
 
-            <ReportWorkspace
-              locale={locale}
-              report={vm.report}
-              assessmentId={assessmentId}
-              canExport={canExport}
-            />
-
-            <p className="border-t border-[var(--border-subtle)] pt-6 text-xs leading-relaxed text-[var(--muted)]">
+            <p className="border-t border-[var(--border-subtle)] pt-4 text-xs leading-relaxed text-[var(--muted)]">
               {vm.disclaimer}
             </p>
           </div>
 
-          {/* Spatial evidence rail — desktop */}
-          <aside
-            aria-label={t(locale, "Official sources", "المصادر الرسمية")}
-            className="hidden border-s border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_65%,transparent)] xl:flex xl:flex-col"
-          >
-            <div className="sticky top-[4.25rem] flex max-h-[calc(100vh-4.25rem)] flex-col overflow-hidden">
-              <div className="border-b border-[var(--border-subtle)] px-4 py-4">
-                <p className="text-overline">{t(locale, "Official sources", "المصادر الرسمية")}</p>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  {verifiedCount}/{vm.sources.length} {t(locale, "verified fresh", "حديثة ومتحقق منها")}
-                </p>
-              </div>
-              <div className="flex-1 overflow-y-auto px-3 py-3">
-                {vm.sources.length === 0 ? (
-                  <p className="px-1 text-sm text-[var(--muted)]">
-                    {t(locale, "No sources linked yet.", "لا مصادر مرتبطة بعد.")}
-                  </p>
-                ) : (
-                  <ul className="space-y-2">
-                    {vm.sources.map((s) => (
-                      <li key={s.id}>
-                        <button
-                          type="button"
-                          onClick={() => setOpenSource(s)}
-                          aria-haspopup="dialog"
-                          className="w-full rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--card)] px-3 py-3 text-start outline-none transition hover:border-[color-mix(in_srgb,var(--highlight)_40%,transparent)] focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]"
-                        >
-                          <p className="truncate text-sm font-medium text-foreground">{s.title}</p>
-                          <p className="mt-0.5 truncate text-[11px] text-[var(--muted)]">
-                            {s.authority ?? t(locale, "Unknown authority", "جهة غير معروفة")}
-                          </p>
-                          <div className="mt-2">
-                            <FreshnessIndicator locale={locale} state={s.freshness} />
-                          </div>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-              {vm.summary.informationCutoff && (
-                <div className="border-t border-[var(--border-subtle)] px-4 py-3 text-[11px] text-[var(--muted)]">
-                  <p>
-                    {t(locale, "Information cutoff", "تاريخ توقف المعلومات")}:{" "}
-                    {new Date(vm.summary.informationCutoff).toLocaleDateString(locale)}
-                  </p>
-                </div>
-              )}
-            </div>
-          </aside>
+          <SourceRail
+            locale={locale}
+            sources={vm.sources}
+            verifiedCount={verifiedCount}
+            informationCutoff={vm.summary.informationCutoff}
+            onOpenSource={setOpenSource}
+          />
         </div>
       </AppShell>
 

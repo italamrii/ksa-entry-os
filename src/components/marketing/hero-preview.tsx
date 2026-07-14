@@ -1,125 +1,142 @@
-import {
-  CheckCircle2,
-  AlertTriangle,
-  FileText,
-  Map,
-  Building2,
-  Shield,
-  ArrowUpRight,
-} from "lucide-react";
 import type { Locale } from "@/lib/i18n";
-import { getLanding } from "@/lib/i18n/content";
-import { Badge } from "@/components/ui/input";
+import { SaudiTopo } from "@/components/brand/saudi-topo";
 
+/**
+ * Cropped live-workspace preview for the landing hero — mirrors IMAGE B composition:
+ * slim rails + executive strip + horizontal pathway stages over topography + source rail.
+ */
 export function HeroPreview({ locale }: { locale: Locale }) {
-  const p = getLanding(locale).preview;
   const isAr = locale === "ar";
+  const stages = isAr
+    ? [
+        { n: 1, t: "سياق الشركة", d: "SaaS أجنبية" },
+        { n: 2, t: "هدف الدخول", d: "تأسيس كيان" },
+        { n: 3, t: "شركة أجنبية مملوكة بالكامل", d: "التوصية الأساسية", focus: true },
+        { n: 4, t: "الجهات", d: "٩ جهات" },
+        { n: 5, t: "الاعتمادات", d: "١٢ موافقة" },
+        { n: 6, t: "المصادر", d: "١٤ متحقق" },
+      ]
+    : [
+        { n: 1, t: "Company Context", d: "Foreign SaaS" },
+        { n: 2, t: "Entry Objective", d: "Establish entity" },
+        { n: 3, t: "Wholly Foreign-Owned", d: "Primary recommendation", focus: true },
+        { n: 4, t: "Authorities", d: "9 authorities" },
+        { n: 5, t: "Dependencies", d: "12 approvals" },
+        { n: 6, t: "Official Sources", d: "14 verified" },
+      ];
+
+  const sources = isAr
+    ? ["وزارة الاستثمار", "مركز الأعمال", "الزكاة والضريبة"]
+    : ["MISA", "Saudi Business Center", "ZATCA"];
 
   return (
-    <div className="relative mx-auto w-full max-w-xl lg:max-w-none animate-fade-in">
-      <div className="absolute -inset-6 rounded-3xl bg-gradient-to-br from-[color-mix(in_srgb,var(--accent)_18%,transparent)] via-[color-mix(in_srgb,var(--highlight)_8%,transparent)] to-transparent blur-3xl" />
-      <div className="relative space-y-3">
-        {/* Executive summary — top card */}
-        <div className="ui-preview-block border-emerald-500/20 p-4 shadow-2xl ring-1 ring-emerald-500/10">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/15">
-                <FileText className="h-4 w-4 text-emerald-400" />
-              </div>
-              <div>
-                <span className="block text-xs font-semibold text-slate-200">{p.report}</span>
-                <span className="text-[10px] text-slate-500">
-                  {isAr ? "شركة SaaS أجنبية" : "Foreign SaaS Company"}
-                </span>
-              </div>
-            </div>
-            <Badge variant="info">{isAr ? "جاهز للمراجعة" : "Board-ready"}</Badge>
-          </div>
-          <div className="grid grid-cols-3 gap-2 text-center">
-            {[
-              { v: "8", l: isAr ? "خطوات" : "Steps" },
-              { v: "4", l: isAr ? "جهات" : "Authorities" },
-              { v: "3", l: isAr ? "تنبيهات" : "Alerts" },
-            ].map((stat) => (
-              <div key={stat.l} className="rounded-lg bg-slate-900/50 py-2">
-                <p className="text-lg font-bold text-emerald-400">{stat.v}</p>
-                <p className="text-[10px] text-slate-500">{stat.l}</p>
-              </div>
+    <div
+      dir={isAr ? "rtl" : "ltr"}
+      className="relative mx-auto w-full max-w-2xl animate-fade-in lg:max-w-none"
+      aria-hidden
+    >
+      <div className="overflow-hidden rounded-xl border border-[var(--border-subtle)] bg-[#0c0d10] shadow-[0_24px_64px_rgba(0,0,0,0.55)]">
+        <div className="grid grid-cols-[2.75rem_minmax(0,1fr)_6.5rem] sm:grid-cols-[3.25rem_minmax(0,1fr)_7.5rem]">
+          {/* Left rail */}
+          <div className="flex flex-col items-center gap-2 border-e border-[var(--border-subtle)] bg-[#0a0b0e] py-3">
+            <span className="h-6 w-6 rounded-md bg-[color-mix(in_srgb,var(--accent)_35%,transparent)]" />
+            {[0, 1, 2, 3, 4].map((i) => (
+              <span
+                key={i}
+                className={`h-5 w-5 rounded ${i === 0 ? "bg-[color-mix(in_srgb,var(--accent)_45%,transparent)] ring-1 ring-[var(--accent)]" : "bg-[var(--surface-muted)]"}`}
+              />
             ))}
           </div>
-        </div>
 
-        {/* Roadmap timeline */}
-        <div className="ui-preview-block p-4">
-          <div className="mb-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Map className="h-4 w-4 text-emerald-400" />
-              <span className="text-xs font-semibold text-slate-200">{p.roadmap}</span>
-            </div>
-            <span className="text-[10px] text-emerald-400/80">72% {isAr ? "مكتمل" : "mapped"}</span>
-          </div>
-          <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
-            <div className="h-full w-[72%] rounded-full bg-gradient-to-r from-emerald-500 to-amber-400 animate-progress" />
-          </div>
-          <div className="space-y-2">
-            {[
-              { n: 1, label: isAr ? "مسار وزارة الاستثمار" : "MISA investment path", active: true },
-              { n: 2, label: isAr ? "مركز الأعمال السعودي" : "Saudi Business Center", active: true },
-              { n: 3, label: isAr ? "جاهزية ZATCA" : "ZATCA readiness", active: false },
-            ].map((step) => (
-              <div
-                key={step.n}
-                className={`flex items-center gap-3 rounded-lg px-3 py-2 transition ${step.active ? "bg-emerald-500/10 ring-1 ring-emerald-500/20" : "bg-slate-900/40"}`}
-              >
-                <span className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-bold ${step.active ? "bg-emerald-500/25 text-emerald-300" : "bg-slate-800 text-slate-500"}`}>
-                  {step.n}
-                </span>
-                <span className="flex-1 text-xs text-slate-300">{step.label}</span>
-                {step.active ? (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <span className="h-2 w-2 rounded-full bg-slate-600" />
-                )}
+          {/* Main stage */}
+          <div className="relative min-w-0 overflow-hidden">
+            <div className="relative border-b border-[var(--border-subtle)] px-3 py-2.5">
+              <SaudiTopo className="pointer-events-none absolute inset-y-0 end-0 w-1/2 opacity-40" glow />
+              <p className="relative text-[8px] font-semibold uppercase tracking-[0.14em] text-[var(--highlight)]">
+                {isAr ? "الملخص التنفيذي" : "Executive summary"}
+              </p>
+              <p className="relative mt-1 line-clamp-2 text-[11px] font-semibold leading-snug text-foreground">
+                {isAr
+                  ? "جاهزية مرتفعة للتأسيس في السعودية خلال ٦–٩ أشهر نموذجية"
+                  : "High planning readiness to establish in KSA with a 6–9 month typical setup"}
+              </p>
+              <div className="relative mt-2 flex gap-1.5">
+                {["78%", isAr ? "متوسط" : "Medium", isAr ? "٦–٩ أشهر" : "6–9 mo"].map((m) => (
+                  <span
+                    key={m}
+                    className="rounded border border-[var(--border-subtle)] bg-black/30 px-1.5 py-0.5 text-[8px] text-[var(--muted)]"
+                  >
+                    {m}
+                  </span>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          {/* Authority map */}
-          <div className="ui-preview-block p-3">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Building2 className="h-3.5 w-3.5 text-amber-400" />
-              <span className="text-[10px] font-semibold text-slate-300">
-                {isAr ? "خريطة الجهات" : "Authority map"}
-              </span>
             </div>
-            <div className="space-y-1.5">
-              {["MISA", "SBC", "ZATCA"].map((auth) => (
-                <div key={auth} className="flex items-center justify-between text-[10px]">
-                  <span className="text-slate-400">{auth}</span>
-                  <ArrowUpRight className="h-3 w-3 text-emerald-500/70" />
+
+            <div className="relative px-2 py-3">
+              <SaudiTopo className="pointer-events-none absolute inset-x-0 bottom-0 h-[70%] w-full opacity-55" glow />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#0c0d10]/80 via-transparent to-[#0c0d10]/70" />
+              <div className="relative flex items-end justify-between gap-1">
+                {stages.map((s) => (
+                  <div
+                    key={s.n}
+                    className={`min-w-0 flex-1 rounded-md border px-1 py-1.5 ${
+                      s.focus
+                        ? "border-[color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] shadow-[0_0_12px_rgba(47,158,110,0.25)]"
+                        : "border-[var(--border-subtle)] bg-black/35"
+                    }`}
+                  >
+                    <span
+                      className={`mb-1 flex h-4 w-4 items-center justify-center rounded-full text-[7px] font-bold ${
+                        s.focus ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-muted)] text-[var(--muted)]"
+                      }`}
+                    >
+                      {s.n}
+                    </span>
+                    <p className="line-clamp-2 text-[7px] font-semibold leading-tight text-foreground sm:text-[8px]">
+                      {s.t}
+                    </p>
+                    <p className="mt-0.5 line-clamp-1 text-[6px] text-[var(--muted)] sm:text-[7px]">{s.d}</p>
+                    {s.focus && (
+                      <span className="mx-auto mt-1 block h-6 w-px bg-gradient-to-b from-[var(--accent-bright)] to-transparent" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-px border-t border-[var(--border-subtle)] bg-[var(--border-subtle)]">
+              {(isAr
+                ? ["افتراضات", "المخاطر", "إجراءات"]
+                : ["Assumptions", "Risks", "Actions"]
+              ).map((label) => (
+                <div key={label} className="bg-[#12141a] px-2 py-2">
+                  <p className="text-[7px] font-semibold text-[var(--muted)]">{label}</p>
+                  <div className="mt-1 space-y-1">
+                    <div className="h-1 rounded bg-[var(--accent)]/40" />
+                    <div className="h-1 w-2/3 rounded bg-white/10" />
+                  </div>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Compliance */}
-          <div className="ui-preview-block p-3">
-            <div className="mb-2 flex items-center gap-1.5">
-              <Shield className="h-3.5 w-3.5 text-amber-400" />
-              <span className="text-[10px] font-semibold text-slate-300">{p.compliance}</span>
-            </div>
-            <div className="space-y-1.5">
-              <div className="flex justify-between text-[10px]">
-                <span className="text-slate-500">{p.risk}</span>
-                <span className="font-medium text-amber-400">{p.medium}</span>
-              </div>
-              <div className="flex items-center gap-1 text-[10px] text-amber-400/90">
-                <AlertTriangle className="h-3 w-3" />
-                <span>{isAr ? "مستشار مرخص موصى به" : "Licensed advisor recommended"}</span>
-              </div>
-            </div>
+          {/* Source rail */}
+          <div className="border-s border-[var(--border-subtle)] bg-[#0a0b0e] px-1.5 py-2">
+            <p className="px-1 text-[7px] font-semibold uppercase tracking-wider text-[var(--highlight)]">
+              {isAr ? "مصادر" : "Sources"}
+            </p>
+            <p className="mt-0.5 px-1 text-[6px] text-[var(--muted)]">14/14</p>
+            <ul className="mt-2 space-y-1">
+              {sources.map((name) => (
+                <li
+                  key={name}
+                  className="rounded border border-[var(--border-subtle)] bg-[#14161c] px-1.5 py-1"
+                >
+                  <p className="truncate text-[7px] font-medium text-foreground">{name}</p>
+                  <p className="text-[6px] text-[var(--accent-bright)]">{isAr ? "متحقق" : "Verified"}</p>
+                </li>
+              ))}
+            </ul>
           </div>
         </div>
       </div>

@@ -1,9 +1,18 @@
 "use client";
 
 import { useState } from "react";
+import { ArrowRight, Maximize2 } from "lucide-react";
 import { t } from "@/lib/i18n";
 import { term, levelLabel } from "@/lib/i18n/glossary";
-import type { DependencyVM, Locale, PathwayVM, SourceVM } from "@/lib/view-models/types";
+import type {
+  AuthorityVM,
+  DependencyVM,
+  ExecutiveSummaryVM,
+  FactVM,
+  Locale,
+  PathwayVM,
+  SourceVM,
+} from "@/lib/view-models/types";
 import { NarrativePanel, EvidencePanel } from "./primitives";
 import { PlanningIndicator, ProfessionalReviewBadge, VerificationBadge } from "./badges";
 import { SaudiTopo } from "@/components/brand/saudi-topo";
@@ -107,128 +116,311 @@ export function PathwayNode({
 
 type CanvasMode = "pathway" | "dependency";
 
+type StageId = "context" | "objective" | "pathway" | "authorities" | "dependencies" | "sources";
+
+/**
+ * IMAGE B spatial pathway canvas:
+ * Company Context → Entry Objective → Recommended Pathway → Authorities → Dependencies → Official Sources
+ */
 export function PathwayCanvas({
   locale,
   pathways,
   dependencies = [],
+  authorities = [],
+  sources = [],
+  summary,
+  context,
   ...handlers
-}: { locale: Locale; pathways: PathwayVM[]; dependencies?: DependencyVM[] } & PathwayHandlers) {
+}: {
+  locale: Locale;
+  pathways: PathwayVM[];
+  dependencies?: DependencyVM[];
+  authorities?: AuthorityVM[];
+  sources?: SourceVM[];
+  summary?: ExecutiveSummaryVM | null;
+  context?: { provided: FactVM[]; inferred: FactVM[] };
+} & PathwayHandlers) {
   const [mode, setMode] = useState<CanvasMode>("pathway");
   const activeKey = handlers.activePathwayKey ?? pathways[0]?.ruleKey ?? null;
+  const focused = pathways.find((p) => p.ruleKey === activeKey) ?? pathways[0] ?? null;
+
+  const companyBits = [
+    summary?.companyName,
+    summary?.companyType,
+    context?.provided[0]?.value,
+  ].filter(Boolean);
+
+  const stages: {
+    id: StageId;
+    n: number;
+    titleEn: string;
+    titleAr: string;
+    detailEn: string;
+    detailAr: string;
+    focus?: boolean;
+  }[] = [
+    {
+      id: "context",
+      n: 1,
+      titleEn: "Company Context",
+      titleAr: "سياق الشركة",
+      detailEn: companyBits.length ? companyBits.slice(0, 2).join(" · ") : "Profile inputs",
+      detailAr: companyBits.length ? companyBits.slice(0, 2).join(" · ") : "مدخلات الملف",
+    },
+    {
+      id: "objective",
+      n: 2,
+      titleEn: "Entry Objective",
+      titleAr: "هدف الدخول",
+      detailEn: summary?.entryGoal ?? summary?.nextActionTitle ?? "Establish presence",
+      detailAr: summary?.entryGoal ?? summary?.nextActionTitle ?? "تأسيس حضور",
+    },
+    {
+      id: "pathway",
+      n: 3,
+      titleEn: focused?.title ?? "Recommended pathway",
+      titleAr: focused?.title ?? "المسار الموصى به",
+      detailEn: t(locale, "Primary recommendation", "التوصية الأساسية"),
+      detailAr: "التوصية الأساسية",
+      focus: true,
+    },
+    {
+      id: "authorities",
+      n: 4,
+      titleEn: "Authorities",
+      titleAr: "الجهات",
+      detailEn: `${authorities.length || focused?.sources.length || 0} ${t(locale, "authorities", "جهات")}`,
+      detailAr: `${authorities.length || focused?.sources.length || 0} جهات`,
+    },
+    {
+      id: "dependencies",
+      n: 5,
+      titleEn: "Dependencies",
+      titleAr: "الاعتمادات",
+      detailEn: `${dependencies.length} ${t(locale, "steps", "خطوات")}`,
+      detailAr: `${dependencies.length} خطوات`,
+    },
+    {
+      id: "sources",
+      n: 6,
+      titleEn: "Official Sources",
+      titleAr: "المصادر الرسمية",
+      detailEn: `${sources.length || focused?.sources.length || 0} ${t(locale, "verified", "متحقق")}`,
+      detailAr: `${sources.length || focused?.sources.length || 0} متحقق`,
+    },
+  ];
 
   return (
     <section id="pathways" aria-label={t(locale, "Recommended pathways", "المسارات الموصى بها")} className="scroll-mt-24">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border-subtle)] pb-3">
+      <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-overline">{t(locale, "Pathway canvas", "لوحة المسارات")}</h2>
-          <p className="mt-1.5 text-sm text-[var(--muted)]">
+          <h2 className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[var(--highlight)]">
+            {t(locale, "Pathway canvas", "لوحة المسارات")}
+          </h2>
+          <p className="mt-1 text-xs text-[var(--muted)]">
             {t(
               locale,
-              "Ordered by planning priority. Select a node to focus its evidence.",
-              "مرتبة حسب أولوية التخطيط. اختر عقدة لتركيز أدلتها."
+              "Spatial entry sequence grounded in official relationships.",
+              "تسلسل دخول مكاني مبني على علاقات رسمية."
             )}
           </p>
         </div>
-        <div
-          role="tablist"
-          aria-label={t(locale, "Canvas mode", "وضع اللوحة")}
-          className="inline-flex rounded-full border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 p-1"
-        >
-          {(
-            [
-              { id: "pathway" as const, en: "Pathway view", ar: "عرض المسار" },
-              { id: "dependency" as const, en: "Dependency view", ar: "عرض الاعتمادات" },
-            ]
-          ).map((tab) => (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={mode === tab.id}
-              onClick={() => setMode(tab.id)}
-              className={cn(
-                "rounded-full px-3 py-1.5 text-xs font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]",
-                mode === tab.id
-                  ? "bg-[color-mix(in_srgb,var(--accent)_18%,transparent)] text-[var(--accent-bright)]"
-                  : "text-[var(--muted)] hover:text-foreground"
-              )}
-            >
-              {t(locale, tab.en, tab.ar)}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div
+            role="tablist"
+            aria-label={t(locale, "Canvas mode", "وضع اللوحة")}
+            className="inline-flex rounded-md border border-[var(--border-subtle)] bg-[var(--surface-muted)]/70 p-0.5"
+          >
+            {(
+              [
+                { id: "pathway" as const, en: "Pathway View", ar: "عرض المسار" },
+                { id: "dependency" as const, en: "Dependency View", ar: "عرض الاعتمادات" },
+              ]
+            ).map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                role="tab"
+                aria-selected={mode === tab.id}
+                onClick={() => setMode(tab.id)}
+                className={cn(
+                  "rounded-[5px] px-2.5 py-1 text-[11px] font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]",
+                  mode === tab.id
+                    ? "bg-[color-mix(in_srgb,var(--accent)_20%,transparent)] text-[var(--accent-bright)]"
+                    : "text-[var(--muted)] hover:text-foreground"
+                )}
+              >
+                {t(locale, tab.en, tab.ar)}
+              </button>
+            ))}
+          </div>
+          <span className="hidden text-[var(--muted)] sm:inline" aria-hidden>
+            <Maximize2 className="h-3.5 w-3.5" />
+          </span>
         </div>
       </div>
 
       {pathways.length === 0 ? (
-        <p className="surface-panel rounded-[var(--radius-lg)] p-6 text-sm text-[var(--muted)]">
+        <p className="pathway-stage rounded-[var(--radius-lg)] border border-[var(--border-subtle)] p-6 text-sm text-[var(--muted)]">
           {t(locale, "No pathways matched your current inputs.", "لا توجد مسارات مطابقة لمدخلاتك الحالية.")}
         </p>
       ) : mode === "dependency" ? (
         <DependencyLane locale={locale} dependencies={dependencies} pathways={pathways} />
       ) : (
         <div className="pathway-stage relative overflow-hidden rounded-[var(--radius-lg)] border border-[var(--border-subtle)]">
-          <SaudiTopo className="pointer-events-none absolute inset-x-0 bottom-0 h-[52%] w-full opacity-45" glow />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[var(--card)] via-[color-mix(in_srgb,var(--card)_72%,transparent)] to-transparent" />
+          {/* Topography layer — dominant underlay */}
+          <div className="pointer-events-none absolute inset-x-[-5%] bottom-[-8%] h-[68%] origin-bottom scale-110 [transform:perspective(900px)_rotateX(18deg)] motion-reduce:[transform:none]">
+            <SaudiTopo className="h-full w-full opacity-70" glow />
+          </div>
+          <div
+            className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgba(12,13,16,0.55)_0%,rgba(12,13,16,0.15)_42%,rgba(12,13,16,0.72)_100%)]"
+            aria-hidden
+          />
+          <div className="pointer-events-none absolute inset-0 topo-grid opacity-40" aria-hidden />
 
-          <div className="relative hidden md:block">
-            <div className="absolute start-[6%] end-[6%] top-[4.35rem] h-px bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-55" aria-hidden />
-            <ol className="relative flex items-start justify-between gap-2 px-4 pb-6 pt-6 lg:gap-3 lg:px-6">
-              {pathways.map((p, i) => {
-                const active = p.ruleKey === activeKey;
+          {/* Desktop horizontal stage flow */}
+          <div className="relative hidden min-h-[22rem] lg:block">
+            <svg
+              className="pointer-events-none absolute inset-x-[4%] top-[5.5rem] h-16 w-[92%]"
+              viewBox="0 0 1000 80"
+              preserveAspectRatio="none"
+              aria-hidden
+            >
+              <path
+                d="M20 40 C 120 10, 200 70, 300 40 S 500 10, 580 40 S 780 70, 860 40 S 940 20, 980 40"
+                fill="none"
+                stroke="url(#path-glow)"
+                strokeWidth="2"
+                strokeLinecap="round"
+                opacity="0.75"
+              />
+              <defs>
+                <linearGradient id="path-glow" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stopColor="#2f9e6e" stopOpacity="0.15" />
+                  <stop offset="45%" stopColor="#3db882" stopOpacity="0.9" />
+                  <stop offset="100%" stopColor="#c4a574" stopOpacity="0.35" />
+                </linearGradient>
+              </defs>
+            </svg>
+
+            <ol className="relative grid grid-cols-6 items-start gap-2 px-3 pb-10 pt-8 xl:gap-3 xl:px-5">
+              {stages.map((stage) => {
+                const isFocus = Boolean(stage.focus);
                 return (
-                  <li key={p.ruleKey} className="relative min-w-0 flex-1">
-                    <button
-                      type="button"
-                      onClick={handlers.onFocusPathway ? () => handlers.onFocusPathway!(p.ruleKey) : undefined}
-                      aria-current={active ? "true" : undefined}
-                      aria-label={t(locale, `Focus pathway ${p.title}`, `تركيز المسار ${p.title}`)}
+                  <li key={stage.id} className="relative min-w-0">
+                    <div
                       className={cn(
-                        "relative w-full rounded-[var(--radius-md)] border px-2 py-4 text-start outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)] lg:px-3",
-                        active
-                          ? "border-[color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--accent)_12%,var(--card))] shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_25%,transparent),0_12px_40px_rgba(0,0,0,0.35)]"
-                          : "border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--card)_88%,transparent)] hover:border-[color-mix(in_srgb,var(--highlight)_35%,transparent)]"
+                        "relative flex flex-col rounded-lg border px-2.5 py-3 transition duration-300 motion-reduce:transition-none",
+                        isFocus
+                          ? "-mt-2 border-[color-mix(in_srgb,var(--accent)_65%,transparent)] bg-[color-mix(in_srgb,var(--accent)_14%,rgba(20,22,28,0.92))] py-4 shadow-[0_0_0_1px_color-mix(in_srgb,var(--accent)_35%,transparent),0_18px_48px_rgba(0,0,0,0.45)]"
+                          : "border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--card)_78%,transparent)] backdrop-blur-[2px]"
                       )}
                     >
                       <span
                         className={cn(
-                          "mx-auto mb-3 flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold",
-                          active ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-muted)] text-[var(--muted)]"
+                          "mb-2 flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-bold",
+                          isFocus ? "bg-[var(--accent)] text-white" : "bg-[var(--surface-muted)] text-[var(--muted)]"
                         )}
                       >
-                        {i + 1}
+                        {stage.n}
                       </span>
-                      <p className="line-clamp-2 text-center text-xs font-semibold text-foreground">{p.title}</p>
-                      <p className="mt-2 text-center text-[10px] text-[var(--muted)]">
-                        {p.sources.length} {t(locale, "sources", "مصادر")}
-                        {p.complexity ? ` · ${levelLabel(locale, p.complexity)}` : ""}
-                      </p>
-                      {active && (
-                        <span
-                          className="absolute start-1/2 top-full h-14 w-px -translate-x-1/2 bg-gradient-to-b from-[var(--accent-bright)] to-transparent motion-reduce:hidden"
-                          aria-hidden
-                        />
+                      {isFocus && (
+                        <p className="mb-1 text-[9px] font-semibold uppercase tracking-wide text-[var(--highlight)]">
+                          {t(locale, "Recommended pathway", "المسار الموصى به")}
+                        </p>
                       )}
-                    </button>
+                      <p
+                        className={cn(
+                          "line-clamp-3 text-xs font-semibold leading-snug text-foreground",
+                          isFocus && "text-sm"
+                        )}
+                      >
+                        {t(locale, stage.titleEn, stage.titleAr)}
+                      </p>
+                      <p className="mt-1.5 line-clamp-2 text-[10px] text-[var(--muted)]">
+                        {t(locale, stage.detailEn, stage.detailAr)}
+                      </p>
+                      {isFocus && focused && (
+                        <>
+                          <span className="mt-2 inline-flex w-fit items-center gap-1 rounded border border-[color-mix(in_srgb,var(--accent)_40%,transparent)] bg-[color-mix(in_srgb,var(--accent)_16%,transparent)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-[var(--accent-bright)]">
+                            {t(locale, "Primary recommendation", "التوصية الأساسية")}
+                            <ArrowRight className="h-2.5 w-2.5 rtl:rotate-180" aria-hidden />
+                          </span>
+                          {/* Focus beam to topography */}
+                          <span
+                            className="pointer-events-none absolute start-1/2 top-full h-24 w-[2px] -translate-x-1/2 bg-gradient-to-b from-[var(--accent-bright)] via-[color-mix(in_srgb,var(--accent)_45%,transparent)] to-transparent motion-reduce:hidden"
+                            aria-hidden
+                          />
+                          <span
+                            className="pointer-events-none absolute start-1/2 top-[calc(100%+5.5rem)] h-3 w-3 -translate-x-1/2 rounded-full bg-[var(--accent-bright)]/80 shadow-[0_0_24px_8px_rgba(61,184,130,0.35)] motion-reduce:hidden"
+                            aria-hidden
+                          />
+                        </>
+                      )}
+                    </div>
                   </li>
                 );
               })}
             </ol>
           </div>
 
-          <div className="relative space-y-3 border-t border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_50%,transparent)] p-4 sm:p-5">
-            <ol className="space-y-3">
-              {pathways.map((p, i) => (
-                <li
-                  key={p.ruleKey}
-                  className={cn(
-                    "transition-opacity duration-300 motion-reduce:transition-none",
-                    activeKey && p.ruleKey !== activeKey && "md:opacity-55"
-                  )}
-                >
-                  <PathwayNode locale={locale} pathway={p} index={i} {...handlers} activePathwayKey={activeKey} />
-                </li>
-              ))}
-            </ol>
+          {/* Mobile / tablet: ordered flow */}
+          <ol className="relative space-y-2 p-4 lg:hidden">
+            {stages.map((stage) => (
+              <li
+                key={stage.id}
+                className={cn(
+                  "rounded-lg border px-3 py-3",
+                  stage.focus
+                    ? "border-[color-mix(in_srgb,var(--accent)_55%,transparent)] bg-[color-mix(in_srgb,var(--accent)_12%,var(--card))]"
+                    : "border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--card)_85%,transparent)]"
+                )}
+              >
+                <div className="flex items-start gap-3">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-xs font-bold">
+                    {stage.n}
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{t(locale, stage.titleEn, stage.titleAr)}</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">{t(locale, stage.detailEn, stage.detailAr)}</p>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          {/* Evidence / pathway detail — preserves UX tests & keyboard source controls */}
+          <div className="relative border-t border-[var(--border-subtle)] bg-[color-mix(in_srgb,var(--obsidian)_55%,transparent)] p-3 sm:p-4">
+            {focused ? (
+              <PathwayNode
+                locale={locale}
+                pathway={focused}
+                index={0}
+                {...handlers}
+                activePathwayKey={activeKey}
+              />
+            ) : null}
+            {pathways.length > 1 && (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {pathways.map((p, i) => (
+                  <li key={p.ruleKey}>
+                    <button
+                      type="button"
+                      onClick={handlers.onFocusPathway ? () => handlers.onFocusPathway!(p.ruleKey) : undefined}
+                      aria-current={p.ruleKey === activeKey ? "true" : undefined}
+                      className={cn(
+                        "rounded-full border px-3 py-1 text-[11px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_50%,transparent)]",
+                        p.ruleKey === activeKey
+                          ? "border-[var(--accent)] text-[var(--accent-bright)]"
+                          : "border-[var(--border-subtle)] text-[var(--muted)]"
+                      )}
+                    >
+                      {i + 1}. {p.title}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

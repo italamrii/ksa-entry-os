@@ -506,10 +506,9 @@ body {
 .exec-strip {
   position: relative;
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
+  border-radius: 0.65rem;
   background:
-    linear-gradient(120deg, color-mix(in srgb, var(--card) 92%, transparent), color-mix(in srgb, var(--forest) 12%, var(--card))),
-    var(--card);
+    linear-gradient(115deg, rgba(20, 22, 28, 0.96) 0%, color-mix(in srgb, var(--forest) 16%, #14161c) 55%, rgba(20, 22, 28, 0.94) 100%);
   box-shadow: var(--depth-1);
   padding: var(--space-5) var(--space-5);
 }
@@ -528,8 +527,14 @@ body {
 }
 
 .pathway-stage {
-  background: linear-gradient(180deg, var(--card-elevated) 0%, var(--card) 55%, color-mix(in srgb, var(--forest) 18%, var(--card)) 100%);
-  min-height: 12rem;
+  background:
+    radial-gradient(ellipse 55% 40% at 50% 78%, color-mix(in srgb, var(--accent) 18%, transparent), transparent),
+    linear-gradient(180deg, #15181f 0%, #101218 48%, color-mix(in srgb, var(--forest) 22%, #0c0d10) 100%);
+  min-height: 22rem;
+}
+
+.source-rail {
+  min-height: calc(100vh - 4.25rem);
 }
 
 .decision-band > * {

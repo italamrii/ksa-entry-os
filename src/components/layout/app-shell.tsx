@@ -76,14 +76,23 @@ export function AppShell({
                 href={link.href}
                 title={t(locale, link.labelEn, link.labelAr)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] xl:px-3",
+                  "group flex flex-col items-start gap-0.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] xl:px-3",
                   active
                     ? "bg-[color-mix(in_srgb,var(--accent)_14%,transparent)] text-[var(--accent-bright)] shadow-[inset_2px_0_0_0_var(--accent)]"
                     : "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-foreground"
                 )}
               >
-                <Icon className="mx-auto h-4 w-4 shrink-0 xl:mx-0" aria-hidden />
-                <span className="hidden truncate xl:inline">{t(locale, link.labelEn, link.labelAr)}</span>
+                <span className="flex w-full items-center gap-3">
+                  <Icon className="mx-auto h-4 w-4 shrink-0 xl:mx-0" aria-hidden />
+                  <span className="hidden truncate xl:inline">{t(locale, link.labelEn, link.labelAr)}</span>
+                </span>
+                <span
+                  className="hidden w-full truncate pe-0 ps-7 text-[10px] font-normal opacity-70 xl:block"
+                  lang={locale === "en" ? "ar" : "en"}
+                  dir={locale === "en" ? "rtl" : "ltr"}
+                >
+                  {locale === "en" ? link.labelAr : link.labelEn}
+                </span>
               </Link>
             );
           })}
