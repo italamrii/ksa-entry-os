@@ -220,8 +220,10 @@ export function buildWorkspaceViewModel(
   const summary: ExecutiveSummaryVM = {
     companyName: ctx.companyName,
     country: ctx.country,
-    companyType: ctx.companyType,
-    entryGoal: ctx.entryGoal,
+    // Localize the enum values so the Arabic summary never shows raw
+    // "foreign"/"setup" (country stays as the user's own free-text input).
+    companyType: ctx.companyType ? labelFromList(COMPANY_TYPES, ctx.companyType, locale) ?? ctx.companyType : null,
+    entryGoal: ctx.entryGoal ? labelFromList(ENTRY_GOALS, ctx.entryGoal, locale) ?? ctx.entryGoal : null,
     hasAssessment: ctx.hasAssessment,
     leadingPathwayTitle: leading?.title ?? null,
     planning: leading?.planning ?? null,

@@ -75,6 +75,7 @@ export function AppShell({
                 key={link.href}
                 href={link.href}
                 title={t(locale, link.labelEn, link.labelAr)}
+                aria-current={active ? "page" : undefined}
                 className={cn(
                   "group flex flex-col items-start gap-0.5 rounded-[var(--radius-md)] px-2.5 py-2.5 text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)] xl:px-3",
                   active
@@ -121,9 +122,12 @@ export function AppShell({
               <Link
                 key={link.href}
                 href={link.href}
+                aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[var(--radius-sm)] px-1 py-1.5 text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]",
-                  active ? "text-[var(--accent-bright)]" : "text-[var(--muted)]"
+                  "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[var(--radius-sm)] border-t-2 px-1 py-1.5 text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]",
+                  active
+                    ? "border-[var(--accent)] font-semibold text-[var(--accent-bright)]"
+                    : "border-transparent text-[var(--muted)]"
                 )}
               >
                 <Icon className="h-4 w-4" aria-hidden />
