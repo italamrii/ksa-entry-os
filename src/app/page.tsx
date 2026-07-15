@@ -19,10 +19,17 @@ import { PremiumCard } from "@/components/marketing/premium-card";
 import { HeroPreview } from "@/components/marketing/hero-preview";
 import { JourneyTimeline } from "@/components/marketing/journey-timeline";
 import { Reveal } from "@/components/marketing/reveal";
+import { LandingPrimaryCta } from "@/components/marketing/landing-primary-cta";
 import { PRICING } from "@/lib/constants";
 import { getCurrentUser } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { getLanding, landingContent } from "@/lib/i18n/content";
 import { getLocaleFromSearch, localeHref } from "@/lib/i18n/locale-utils";
+import {
+  resolveLandingPrimaryCtaHref,
+  resolveLandingSecondaryCtaHref,
+  type LandingPrimaryCtaAuth,
+} from "@/lib/navigation/landing-cta";
 import type { Locale } from "@/lib/i18n";
 
 export default async function HomePage({
@@ -36,6 +43,25 @@ export default async function HomePage({
   const dir = locale === "ar" ? "rtl" : "ltr";
   const L = getLanding(locale);
   const Arrow = locale === "ar" ? ArrowLeft : ArrowRight;
+
+  let hasAssessment = false;
+  if (user?.onboardingDone) {
+    const assessment = await prisma.assessment.findFirst({
+      where: { userId: user.id },
+      select: { id: true },
+    });
+    hasAssessment = Boolean(assessment);
+  }
+
+  const primaryAuth: LandingPrimaryCtaAuth = user
+    ? {
+        status: "authenticated",
+        onboardingDone: user.onboardingDone,
+        hasAssessment,
+      }
+    : { status: "anonymous" };
+  const primaryHref = resolveLandingPrimaryCtaHref(primaryAuth, locale);
+  const secondaryHref = resolveLandingSecondaryCtaHref(Boolean(user), locale);
 
   const provideIcons = [Map, Link2, Layers, FileDown, AlertTriangle, ListChecks];
   const whyIcons = [Target, Shield, Layers];
@@ -69,13 +95,8 @@ export default async function HomePage({
               ))}
             </ul>
             <div className="mt-6 flex flex-col gap-2.5 sm:flex-row sm:items-center">
-              <Link href={localeHref("/register", locale)}>
-                <Button size="lg" className="cta-glow w-full gap-2 sm:w-auto">
-                  {L.hero.ctaPrimary}
-                  <Arrow className="h-4 w-4" />
-                </Button>
-              </Link>
-              <Link href={localeHref(user ? "/workspace" : "/#how-it-works", locale)}>
+              <LandingPrimaryCta href={primaryHref} label={L.hero.ctaPrimary} locale={locale} />
+              <Link href={secondaryHref}>
                 <Button variant="outline" size="lg" className="w-full sm:w-auto">
                   {user ? (locale === "ar" ? "فتح مساحة العمل" : "Open workspace") : L.hero.ctaSecondary}
                 </Button>
