@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,8 @@ import { Badge } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
 type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
@@ -23,7 +25,8 @@ interface PaymentView {
   paymentsEnabled: boolean;
 }
 
-export default function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
+  const locale = useLocale();
   const router = useRouter();
   const [payment, setPayment] = useState<PaymentView | null>(null);
   const [loading, setLoading] = useState(false);
@@ -68,7 +71,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
       const json = (await res.json()) as { status: PaymentStatus };
       setPayment((prev) => (prev ? { ...prev, status: json.status } : prev));
       toast.success(success ? "Demo payment marked paid (dev only)" : "Demo payment marked failed");
-      if (success) setTimeout(() => router.push("/dashboard"), 1500);
+      if (success) setTimeout(() => router.push(localeHref("/dashboard", locale)), 1500);
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -116,7 +119,7 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
                   when online payments are available.
                 </p>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href="/dashboard">Return to dashboard</Link>
+                  <Link href={localeHref("/dashboard", locale)}>Return to dashboard</Link>
                 </Button>
               </div>
             )}
@@ -162,5 +165,14 @@ export default function PaymentDetailPage({ params }: { params: Promise<{ id: st
         </Card>
       </div>
     </div>
+  );
+}
+
+
+export default function PaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense fallback={null}>
+      <PaymentDetail params={params} />
+    </Suspense>
   );
 }

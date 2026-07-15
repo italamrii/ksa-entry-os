@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { localeHref, getLocaleFromSearch } from "@/lib/i18n/locale-utils";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -11,10 +12,11 @@ import { AppShell } from "@/components/layout/app-shell";
 
 export const runtime = "nodejs";
 
-export default async function WorkspacePage() {
+export default async function WorkspacePage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
+  const urlLocale = getLocaleFromSearch((await searchParams).lang);
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (!user.onboardingDone) redirect("/onboarding");
+  if (!user) redirect(localeHref("/login", urlLocale));
+  if (!user.onboardingDone) redirect(localeHref("/onboarding", (user.locale as "en" | "ar") ?? urlLocale));
 
   const locale = (user.locale as Locale) ?? "en";
   const context: WorkspaceContext = {

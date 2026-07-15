@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
 import { COMPANY_TYPES, ENTRY_GOALS, APP_NAME } from "@/lib/constants";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 import { toast } from "sonner";
 
 interface Sector {
@@ -17,8 +19,9 @@ interface Sector {
   nameEn: string;
 }
 
-export default function RegisterPage() {
+function RegisterForm() {
   const router = useRouter();
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const [sectors, setSectors] = useState<Sector[]>([]);
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterInput>({
@@ -47,7 +50,7 @@ export default function RegisterPage() {
         return;
       }
       toast.success("Account created!");
-      router.push("/onboarding");
+      router.push(localeHref("/onboarding", locale));
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -58,7 +61,7 @@ export default function RegisterPage() {
 
   return (
     <div className="auth-stage flex min-h-screen flex-col">
-      <SiteHeader />
+      <SiteHeader locale={locale} />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="surface-panel w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]">
           <div className="border-b border-[var(--border-subtle)] px-6 py-5">
@@ -143,5 +146,14 @@ export default function RegisterPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterForm />
+    </Suspense>
   );
 }

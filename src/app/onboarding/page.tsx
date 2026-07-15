@@ -1,21 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { SiteHeader } from "@/components/layout/site-header";
 import { COMPANY_TYPES, ENTRY_GOALS } from "@/lib/constants";
 import { toast } from "sonner";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
-export default function OnboardingPage() {
+function OnboardingForm() {
   const router = useRouter();
+  const urlLocale = useLocale();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     const form = new FormData(e.currentTarget);
+    const chosenLocale = form.get("locale") === "ar" ? "ar" as const : "en" as const;
     try {
       const res = await fetch("/api/onboarding", {
         method: "POST",
@@ -27,7 +31,7 @@ export default function OnboardingPage() {
         return;
       }
       toast.success("Profile updated!");
-      router.push("/dashboard");
+      router.push(localeHref("/dashboard", chosenLocale));
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -38,7 +42,7 @@ export default function OnboardingPage() {
 
   return (
     <div className="auth-stage flex min-h-screen flex-col">
-      <SiteHeader isAuthenticated />
+      <SiteHeader locale={urlLocale} isAuthenticated />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="surface-panel w-full max-w-lg overflow-hidden rounded-[var(--radius-lg)]">
           <div className="border-b border-[var(--border-subtle)] px-6 py-5">
@@ -93,5 +97,14 @@ export default function OnboardingPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function OnboardingPage() {
+  return (
+    <Suspense fallback={null}>
+      <OnboardingForm />
+    </Suspense>
   );
 }

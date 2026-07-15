@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { localeHref } from "@/lib/i18n/locale-utils";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
@@ -35,7 +36,7 @@ export default async function AssessmentResultPage({
     },
   });
 
-  if (!assessment) redirect("/dashboard");
+  if (!assessment) redirect(localeHref("/dashboard", locale));
 
   const hasPaid = await userHasVerifiedPaidAccess(user.id, { assessmentId: id });
   const previewLimit = getPreviewLimit(!!hasPaid);

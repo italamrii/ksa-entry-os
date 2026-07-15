@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { localeHref } from "@/lib/i18n/locale-utils";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +14,7 @@ function CheckoutContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const assessmentId = searchParams.get("assessment");
+  const locale = searchParams.get("lang") === "ar" ? "ar" as const : "en" as const;
   const planParam = searchParams.get("plan") as "PROFESSIONAL" | "BUSINESS" | null;
   const [loading, setLoading] = useState(false);
   const [plan, setPlan] = useState<"PROFESSIONAL" | "BUSINESS">(planParam ?? "PROFESSIONAL");
@@ -42,7 +44,7 @@ function CheckoutContent() {
         toast.error(json.error ?? "Checkout failed");
         return;
       }
-      router.push(`/payments/${json.paymentId}`);
+      router.push(localeHref(`/payments/${json.paymentId}`, locale));
     } catch {
       toast.error("Something went wrong");
     } finally {

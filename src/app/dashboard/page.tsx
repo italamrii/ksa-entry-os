@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { localeHref, getLocaleFromSearch } from "@/lib/i18n/locale-utils";
 import {
   CheckCircle2,
   ArrowRight,
@@ -23,10 +24,11 @@ import { getDashboard } from "@/lib/i18n/content";
 import { formatDate } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n";
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
+  const urlLocale = getLocaleFromSearch((await searchParams).lang);
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
-  if (!user.onboardingDone) redirect("/onboarding");
+  if (!user) redirect(localeHref("/login", urlLocale));
+  if (!user.onboardingDone) redirect(localeHref("/onboarding", (user.locale as "en" | "ar") ?? urlLocale));
 
   const locale = (user.locale as Locale) ?? "en";
   const D = getDashboard(locale);
@@ -69,7 +71,7 @@ export default async function DashboardPage() {
                   {user.companyName} — {D.subtitle}
                 </p>
               </div>
-              <Link href="/assessment/new">
+              <Link href={localeHref("/assessment/new", locale)}>
                 <Button className="cta-glow gap-2">
                   <FileSearch className="h-4 w-4" />
                   {D.newAssessment}
@@ -100,7 +102,7 @@ export default async function DashboardPage() {
             <div className="bg-[var(--card)] p-5">
               <p className="text-caption">{D.activeReports}</p>
               <p className="mt-2 text-sm font-semibold text-foreground">{activeRequests.length}</p>
-              <Link href="/requests" className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-bright)]">
+              <Link href={localeHref("/requests", locale)} className="mt-3 inline-flex items-center gap-1 text-sm font-medium text-[var(--accent-bright)]">
                 {D.viewReports} <Arrow className="h-3.5 w-3.5" />
               </Link>
             </div>
@@ -126,7 +128,7 @@ export default async function DashboardPage() {
                 <div>
                   <h2 className="font-semibold text-foreground">{D.nextAction}</h2>
                   <p className="mt-1 text-sm text-[var(--muted)]">{D.nextActionDesc}</p>
-                  <Link href="/assessment/new" className="mt-4 inline-block">
+                  <Link href={localeHref("/assessment/new", locale)} className="mt-4 inline-block">
                     <Button size="sm">{D.buildFirst}</Button>
                   </Link>
                 </div>
@@ -217,7 +219,7 @@ export default async function DashboardPage() {
                 <p className="text-sm leading-relaxed text-[var(--muted)]">{D.noticeDisclaimer}</p>
                 <div className="mt-4 border-t border-[var(--border-subtle)] pt-4">
                   <p className="text-sm text-[var(--muted)]">{D.consultationNote}</p>
-                  <Link href="/requests" className="mt-3 inline-block">
+                  <Link href={localeHref("/requests", locale)} className="mt-3 inline-block">
                     <Button variant="outline" size="sm">{D.consultation}</Button>
                   </Link>
                 </div>

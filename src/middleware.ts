@@ -15,6 +15,7 @@ const securityHeaders: Record<string, string> = {
 
 const protectedPaths = [
   "/dashboard",
+  "/workspace",
   "/assessment",
   "/requests",
   "/reports",
@@ -55,21 +56,28 @@ export async function middleware(request: NextRequest) {
   const isAdmin = adminPaths.some((p) => pathname.startsWith(p));
   const isAuth = authPaths.some((p) => pathname.startsWith(p));
 
+  // Preserve the visitor's locale (?lang=ar) across every middleware redirect.
+  const lang = request.nextUrl.searchParams.get("lang") === "ar" ? "ar" : null;
+  const withLang = (url: URL): URL => {
+    if (lang) url.searchParams.set("lang", lang);
+    return url;
+  };
+
   if ((isProtected || isAdmin) && !session) {
     const loginUrl = new URL("/login", request.url);
     loginUrl.searchParams.set("next", pathname);
-    const redirect = NextResponse.redirect(loginUrl);
+    const redirect = NextResponse.redirect(withLang(loginUrl));
     return applySecurityHeaders(redirect, isProduction);
   }
 
   if (isAdmin && session?.role !== "ADMIN") {
-    const denied = NextResponse.redirect(new URL("/dashboard", request.url));
+    const denied = NextResponse.redirect(withLang(new URL("/dashboard", request.url)));
     return applySecurityHeaders(denied, isProduction);
   }
 
   if (isAuth && session) {
     const dest = session.role === "ADMIN" ? "/admin" : "/dashboard";
-    const redirect = NextResponse.redirect(new URL(dest, request.url));
+    const redirect = NextResponse.redirect(withLang(new URL(dest, request.url)));
     return applySecurityHeaders(redirect, isProduction);
   }
 

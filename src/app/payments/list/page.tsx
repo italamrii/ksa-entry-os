@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { localeHref, getLocaleFromSearch } from "@/lib/i18n/locale-utils";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -9,9 +10,10 @@ import { formatDate } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
 
-export default async function PaymentsListPage() {
+export default async function PaymentsListPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
+  const urlLocale = getLocaleFromSearch((await searchParams).lang);
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(localeHref("/login", urlLocale));
 
   const locale = (user.locale as Locale) ?? "en";
   const payments = await prisma.payment.findMany({
@@ -32,7 +34,7 @@ export default async function PaymentsListPage() {
                 {t(locale, "Payments", "المدفوعات")}
               </h1>
             </div>
-            <Link href="/payments?plan=PROFESSIONAL" className="text-sm text-[var(--accent-bright)] hover:underline">
+            <Link href={localeHref("/payments?plan=PROFESSIONAL", locale)} className="text-sm text-[var(--accent-bright)] hover:underline">
               {t(locale, "New payment", "دفعة جديدة")}
             </Link>
           </div>

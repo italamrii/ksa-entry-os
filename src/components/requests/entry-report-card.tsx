@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { localeHref } from "@/lib/i18n/locale-utils";
 import { Badge } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
@@ -120,10 +121,10 @@ export function EntryReportsEmpty({ locale }: { locale: Locale }) {
       <h3 className="text-lg font-semibold text-foreground">{R.emptyTitle}</h3>
       <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-[var(--muted)]">{R.emptyBody}</p>
       <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-        <Link href="/assessment/new">
+        <Link href={localeHref("/assessment/new", locale)}>
           <Button className="cta-glow gap-2">{R.emptyCta}</Button>
         </Link>
-        <Link href="/payments">
+        <Link href={localeHref("/payments", locale)}>
           <Button variant="outline">{R.upgradeCta}</Button>
         </Link>
       </div>

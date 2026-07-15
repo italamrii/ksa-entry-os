@@ -60,7 +60,7 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
             {locale === "ar" ? "EN" : "عربي"}
           </Link>
           {isAuthenticated ? (
-            <form action="/api/auth/logout" method="POST">
+            <form action={localeHref("/api/auth/logout", locale)} method="POST">
               <Button type="submit" variant="ghost" size="sm">
                 {n.logout}
               </Button>

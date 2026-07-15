@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { localeHref } from "@/lib/i18n/locale-utils";
 import { AlertTriangle, Inbox, Loader2, ShieldAlert, Clock, ServerCrash, FileQuestion } from "lucide-react";
 import { t } from "@/lib/i18n";
 import type { Locale } from "@/lib/view-models/types";
@@ -86,7 +87,7 @@ export function NoAssessmentState({ locale }: StateProps) {
       why={t(locale, "We use your non-sensitive context to organize possible pathways from official sources.", "نستخدم سياقك غير الحساس لتنظيم المسارات المحتملة من المصادر الرسمية.")}
       next={t(locale, "It takes a few minutes and you can save and resume.", "يستغرق دقائق ويمكنك الحفظ والمتابعة.")}
       action={
-        <Link href="/assessment/new" className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
+        <Link href={localeHref("/assessment/new", locale)} className="inline-flex items-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500">
           {t(locale, "Begin assessment", "ابدأ التقييم")}
         </Link>
       }
@@ -136,7 +137,7 @@ export function UnauthorizedState({ locale }: StateProps) {
       what={t(locale, "This workspace belongs to a different organization.", "تخص مساحة العمل هذه مؤسسة أخرى.")}
       next={t(locale, "Return to your own workspace.", "عد إلى مساحة عملك.")}
       action={
-        <Link href="/workspace" className="text-sm font-medium text-emerald-400">
+        <Link href={localeHref("/workspace", locale)} className="text-sm font-medium text-emerald-400">
           {t(locale, "Go to my workspace", "الذهاب إلى مساحتي")}
         </Link>
       }

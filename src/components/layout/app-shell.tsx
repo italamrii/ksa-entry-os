@@ -14,6 +14,7 @@ import {
 import { cn } from "@/lib/utils";
 import type { Locale } from "@/lib/i18n";
 import { t } from "@/lib/i18n";
+import { localeHref } from "@/lib/i18n/locale-utils";
 import { LogoMark } from "@/components/brand/logo";
 import { APP_NAME } from "@/lib/constants";
 
@@ -73,7 +74,7 @@ export function AppShell({
             return (
               <Link
                 key={link.href}
-                href={link.href}
+                href={localeHref(link.href, locale)}
                 title={t(locale, link.labelEn, link.labelAr)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
@@ -121,7 +122,7 @@ export function AppShell({
             return (
               <Link
                 key={link.href}
-                href={link.href}
+                href={localeHref(link.href, locale)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-[var(--radius-sm)] border-t-2 px-1 py-1.5 text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]",

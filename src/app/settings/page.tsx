@@ -1,15 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select } from "@/components/ui/input";
 import { toast } from "sonner";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
-export default function SettingsPage() {
+function SettingsForm() {
   const router = useRouter();
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -27,6 +30,9 @@ export default function SettingsPage() {
         return;
       }
       toast.success("Settings saved!");
+      // Follow the language the user just chose (keeps ?lang in sync).
+      const chosenLocale = form.get("locale") === "ar" ? ("ar" as const) : ("en" as const);
+      router.push(localeHref("/settings", chosenLocale));
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -51,8 +57,8 @@ export default function SettingsPage() {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader isAuthenticated />
-      <DashboardShell locale="en" currentPath="/settings">
+      <SiteHeader locale={locale} isAuthenticated />
+      <DashboardShell locale={locale} currentPath="/settings">
         <div className="mx-auto max-w-lg space-y-6">
           <div>
             <p className="text-overline">Account</p>
@@ -72,7 +78,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <Label htmlFor="locale">Language</Label>
-                  <Select id="locale" name="locale" defaultValue="en" className="mt-1">
+                  <Select id="locale" name="locale" defaultValue={locale} className="mt-1">
                     <option value="en">English</option>
                     <option value="ar">العربية</option>
                   </Select>
@@ -94,5 +100,14 @@ export default function SettingsPage() {
         </div>
       </DashboardShell>
     </div>
+  );
+}
+
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={null}>
+      <SettingsForm />
+    </Suspense>
   );
 }

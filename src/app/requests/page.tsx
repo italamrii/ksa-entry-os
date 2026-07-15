@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { localeHref, getLocaleFromSearch } from "@/lib/i18n/locale-utils";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader } from "@/components/layout/site-header";
@@ -8,9 +9,10 @@ import { getRequests } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n";
 import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
 
-export default async function RequestsPage() {
+export default async function RequestsPage({ searchParams }: { searchParams: Promise<{ lang?: string }> }) {
+  const urlLocale = getLocaleFromSearch((await searchParams).lang);
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(localeHref("/login", urlLocale));
 
   const locale = (user.locale as Locale) ?? "en";
   const R = getRequests(locale);

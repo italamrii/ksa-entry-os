@@ -1,47 +1,30 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { SiteHeader } from "@/components/layout/site-header";
 import { DashboardShell } from "@/components/layout/dashboard-nav";
-import { LAUNCH_TIMELINES } from "@/lib/constants";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
+import {
+  ASSESSMENT_QUESTIONS,
+  ASSESSMENT_UI,
+  optionLabel,
+  questionHint,
+  questionTitle,
+} from "@/lib/i18n/assessment";
 import { toast } from "sonner";
-
-const QUESTIONS_EN = [
-  { key: "companyOrigin", type: "select", label: "Is your company Saudi-based or foreign?", options: [{ value: "foreign", label: "Foreign company" }, { value: "local", label: "Saudi / local company" }], hint: "Provided fact — used to select investment pathways." },
-  { key: "hasForeignEntity", type: "boolean", label: "Do you already have a legal entity outside Saudi Arabia?", hint: "Helps distinguish branch vs. new entity routes." },
-  { key: "businessActivity", type: "text", label: "What is your primary business activity in KSA?", hint: "Free-text context for sector-aware guidance." },
-  { key: "hiringEmployees", type: "boolean", label: "Will you hire employees in Saudi Arabia?", hint: "May surface labor and social-insurance pathways." },
-  { key: "sellingToGov", type: "boolean", label: "Do you plan to sell to government entities?", hint: "May affect procurement readiness notes." },
-  { key: "needsLocalOffice", type: "boolean", label: "Do you need a local office or presence?", hint: "Informs municipal and presence-related steps." },
-  { key: "invoiceCustomers", type: "boolean", label: "Will you invoice Saudi customers?", hint: "May relate to tax readiness pathways." },
-  { key: "sectorLicensing", type: "boolean", label: "Does your activity require sector-specific licensing?", hint: "Flags sector licensing pathways when applicable." },
-  { key: "launchTimeline", type: "select", label: "What is your target market-entry timeline?", options: LAUNCH_TIMELINES.map((t) => ({ value: t.value, label: t.labelEn })), hint: "Planning context only — not an approval forecast." },
-];
-
-const QUESTIONS_AR = [
-  { key: "companyOrigin", type: "select", label: "هل شركتكم سعودية أم أجنبية؟", options: [{ value: "foreign", label: "شركة أجنبية" }, { value: "local", label: "شركة سعودية / محلية" }], hint: "حقيقة مُقدَّمة — تُستخدم لاختيار مسارات الاستثمار." },
-  { key: "hasForeignEntity", type: "boolean", label: "هل لديكم كيان قانوني خارج المملكة؟", hint: "يساعد على التمييز بين الفرع والكيان الجديد." },
-  { key: "businessActivity", type: "text", label: "ما نشاطكم التجاري الرئيسي في السعودية؟", hint: "سياق نصي للتوجيه القطاعي." },
-  { key: "hiringEmployees", type: "boolean", label: "هل ستُوظّفون موظفين في المملكة؟", hint: "قد يُظهر مسارات العمل والتأمينات." },
-  { key: "sellingToGov", type: "boolean", label: "هل تخططون للبيع للجهات الحكومية؟", hint: "قد يؤثر على ملاحظات جاهزية المشتريات." },
-  { key: "needsLocalOffice", type: "boolean", label: "هل تحتاجون مكتبًا أو حضورًا محليًا؟", hint: "يُفيد خطوات البلدية والحضور المحلي." },
-  { key: "invoiceCustomers", type: "boolean", label: "هل ستُصدِرون فواتير لعملاء سعوديين؟", hint: "قد يرتبط بمسارات الجاهزية الضريبية." },
-  { key: "sectorLicensing", type: "boolean", label: "هل يتطلب نشاطكم ترخيصًا قطاعيًا؟", hint: "يُظهر مسارات الترخيص القطاعي عند الانطباق." },
-  { key: "launchTimeline", type: "select", label: "ما الجدول الزمني المستهدف لدخول السوق؟", options: LAUNCH_TIMELINES.map((t) => ({ value: t.value, label: t.labelAr })), hint: "سياق تخطيط فقط — ليس توقع موافقة." },
-];
 
 type FormData = Record<string, string | boolean>;
 
-export default function NewAssessmentPage() {
+function NewAssessmentWizard() {
   const router = useRouter();
+  // Canonical locale: ?lang from the URL (preserved by localeHref everywhere).
+  const locale = useLocale();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
-  const [locale] = useState<"en" | "ar">(() =>
-    typeof document !== "undefined" && document.documentElement.dir === "rtl" ? "ar" : "en"
-  );
   const [form, setForm] = useState<FormData>({
     companyOrigin: "foreign",
     hasForeignEntity: false,
@@ -52,13 +35,11 @@ export default function NewAssessmentPage() {
     sectorLicensing: false,
   });
 
-  const QUESTIONS = locale === "ar" ? QUESTIONS_AR : QUESTIONS_EN;
+  const dir = locale === "ar" ? "rtl" : "ltr";
+  const QUESTIONS = ASSESSMENT_QUESTIONS;
   const current = QUESTIONS[step];
   const progress = ((step + 1) / QUESTIONS.length) * 100;
-
-  const labels = locale === "ar"
-    ? { title: "جلسة تخطيط الدخول", subtitle: "أسئلة موجَّهة لربط المسارات الرسمية المناسبة", back: "رجوع", next: "التالي", generate: "إنشاء خارطة طريق الدخول", generating: "جاري رسم المسارات…", yes: "نعم", no: "لا", placeholder: "صف نشاط شركتك", review: "مراجعة الإجابات", provided: "مُقدَّم", edit: "تعديل", why: "لماذا يهم", journey: "رحلة التقييم" }
-    : { title: "Strategic entry session", subtitle: "Guided questions to map official pathways for your expansion plan", back: "Back", next: "Next", generate: "Generate entry roadmap", generating: "Mapping pathways…", yes: "Yes", no: "No", placeholder: "Describe your business activity", review: "Review answers", provided: "Provided", edit: "Edit", why: "Why this matters", journey: "Assessment journey" };
+  const labels = ASSESSMENT_UI[locale];
 
   function setValue(key: string, value: string | boolean) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -67,6 +48,7 @@ export default function NewAssessmentPage() {
   async function submit() {
     setLoading(true);
     try {
+      // Payload values are the stable internal keys — never localized.
       const res = await fetch("/api/assessments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -74,13 +56,13 @@ export default function NewAssessmentPage() {
       });
       const json = await res.json();
       if (!res.ok) {
-        toast.error(json.error ?? "Failed to create assessment");
+        toast.error(json.error ?? labels.submitFailed);
         return;
       }
-      toast.success(locale === "ar" ? "تم إنشاء خارطة الطريق" : "Entry roadmap generated");
-      router.push(`/assessment/${json.assessmentId}`);
+      toast.success(labels.success);
+      router.push(localeHref(`/assessment/${json.assessmentId}`, locale));
     } catch {
-      toast.error("Something went wrong");
+      toast.error(labels.genericError);
     } finally {
       setLoading(false);
     }
@@ -98,14 +80,15 @@ export default function NewAssessmentPage() {
     const v = form[q.key];
     if (q.type === "boolean") return v === true ? labels.yes : labels.no;
     if (q.type === "select" && q.options) {
-      return q.options.find((o) => o.value === v)?.label ?? String(v ?? "—");
+      const opt = q.options.find((o) => o.value === v);
+      return opt ? optionLabel(opt, locale) : String(v ?? "—");
     }
     return String(v ?? "—") || "—";
   }
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <SiteHeader isAuthenticated />
+    <div className="flex min-h-screen flex-col" dir={dir}>
+      <SiteHeader locale={locale} isAuthenticated />
       <DashboardShell locale={locale} currentPath="/assessment/new">
         <div className="mx-auto grid w-full max-w-5xl gap-6 lg:grid-cols-[minmax(0,1fr)_14rem]">
         <div className="surface-panel overflow-hidden rounded-[var(--radius-lg)]">
@@ -121,7 +104,7 @@ export default function NewAssessmentPage() {
             </h1>
             <p className="mt-1 text-sm text-[var(--muted)]">{labels.subtitle}</p>
             {!showSummary && (
-              <p className="mt-2 text-caption">
+              <p className="mt-2 text-caption" dir="ltr" style={{ textAlign: locale === "ar" ? "right" : "left" }}>
                 {step + 1} / {QUESTIONS.length}
               </p>
             )}
@@ -136,7 +119,7 @@ export default function NewAssessmentPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
                           <p className="text-caption">{labels.provided}</p>
-                          <p className="text-sm font-medium text-foreground">{q.label}</p>
+                          <p className="text-sm font-medium text-foreground">{questionTitle(q, locale)}</p>
                           <p className="mt-1 text-sm text-[var(--muted)]">{formatAnswer(q)}</p>
                         </div>
                         <Button
@@ -165,13 +148,11 @@ export default function NewAssessmentPage() {
             ) : (
               <>
                 <div>
-                  <p className="text-lg font-semibold text-foreground">{current.label}</p>
-                  {"hint" in current && current.hint && (
-                    <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 px-4 py-3">
-                      <p className="text-caption text-[var(--highlight)]">{labels.why}</p>
-                      <p className="mt-1 text-sm text-[var(--muted)]">{current.hint}</p>
-                    </div>
-                  )}
+                  <p className="text-lg font-semibold text-foreground">{questionTitle(current, locale)}</p>
+                  <div className="mt-3 rounded-[var(--radius-md)] border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 px-4 py-3">
+                    <p className="text-caption text-[var(--highlight)]">{labels.why}</p>
+                    <p className="mt-1 text-sm text-[var(--muted)]">{questionHint(current, locale)}</p>
+                  </div>
                 </div>
 
                 {current.type === "boolean" && (
@@ -194,7 +175,7 @@ export default function NewAssessmentPage() {
                         className="w-full justify-start"
                         onClick={() => setValue(current.key, opt.value)}
                       >
-                        {opt.label}
+                        {optionLabel(opt, locale)}
                       </Button>
                     ))}
                   </div>
@@ -240,7 +221,7 @@ export default function NewAssessmentPage() {
                   }`}
                 >
                   <span className="text-metric me-2 opacity-70">{i + 1}</span>
-                  {q.label}
+                  {questionTitle(q, locale)}
                 </li>
               );
             })}
@@ -249,5 +230,14 @@ export default function NewAssessmentPage() {
         </div>
       </DashboardShell>
     </div>
+  );
+}
+
+export default function NewAssessmentPage() {
+  // useSearchParams (inside useLocale) requires a Suspense boundary.
+  return (
+    <Suspense fallback={null}>
+      <NewAssessmentWizard />
+    </Suspense>
   );
 }

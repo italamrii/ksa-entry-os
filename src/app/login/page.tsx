@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
@@ -11,9 +11,12 @@ import { Input, Label } from "@/components/ui/input";
 import { SiteHeader } from "@/components/layout/site-header";
 import { toast } from "sonner";
 import { APP_NAME } from "@/lib/constants";
+import { localeHref } from "@/lib/i18n/locale-utils";
+import { useLocale } from "@/lib/i18n/use-locale";
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter();
+  const locale = useLocale();
   const [loading, setLoading] = useState(false);
   const { register, handleSubmit, formState: { errors } } = useForm<LoginInput>({
     resolver: zodResolver(loginSchema),
@@ -33,7 +36,7 @@ export default function LoginPage() {
         return;
       }
       toast.success("Welcome back!");
-      router.push(json.onboardingDone === false ? "/onboarding" : "/dashboard");
+      router.push(localeHref(json.onboardingDone === false ? "/onboarding" : "/dashboard", locale));
       router.refresh();
     } catch {
       toast.error("Something went wrong");
@@ -44,7 +47,7 @@ export default function LoginPage() {
 
   return (
     <div className="auth-stage flex min-h-screen flex-col">
-      <SiteHeader />
+      <SiteHeader locale={locale} />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="surface-panel w-full max-w-md overflow-hidden rounded-[var(--radius-lg)]">
           <div className="border-b border-[var(--border-subtle)] px-6 py-5">
@@ -78,5 +81,14 @@ export default function LoginPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
   );
 }
