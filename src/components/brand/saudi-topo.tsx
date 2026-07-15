@@ -16,6 +16,11 @@ export type HubId =
 
 export type LocaleLabel = "en" | "ar";
 
+/**
+ * Hub positions are the REAL city coordinates projected with the same
+ * equirectangular transform as the outline (see KSA_FACE note below), so every
+ * node sits at its true geographic location.
+ */
 const HUBS: {
   id: HubId;
   x: number;
@@ -25,14 +30,14 @@ const HUBS: {
   labelEn: string;
   labelAr: string;
 }[] = [
-  { id: "riyadh", x: 392, y: 278, r: 7, accent: "gold", labelEn: "Riyadh", labelAr: "الرياض" },
-  { id: "jeddah", x: 218, y: 305, r: 5.5, accent: "emerald", labelEn: "Jeddah", labelAr: "جدة" },
-  { id: "dammam", x: 530, y: 255, r: 5.2, accent: "emerald", labelEn: "Dammam", labelAr: "الدمام" },
-  { id: "neom", x: 168, y: 118, r: 4.8, accent: "gold", labelEn: "NEOM", labelAr: "نيوم" },
-  { id: "madinah", x: 248, y: 225, r: 4.4, accent: "emerald", labelEn: "Madinah", labelAr: "المدينة" },
-  { id: "abha", x: 268, y: 410, r: 4.2, accent: "emerald", labelEn: "Abha", labelAr: "أبها" },
-  { id: "tabuk", x: 205, y: 148, r: 4, accent: "emerald", labelEn: "Tabuk", labelAr: "تبوك" },
-  { id: "jizan", x: 248, y: 458, r: 3.8, accent: "emerald", labelEn: "Jazan", labelAr: "جازان" },
+  { id: "riyadh", x: 391.3, y: 262.3, r: 7, accent: "gold", labelEn: "Riyadh", labelAr: "الرياض" },
+  { id: "jeddah", x: 201.3, y: 350.5, r: 5.5, accent: "emerald", labelEn: "Jeddah", labelAr: "جدة" },
+  { id: "dammam", x: 478.1, y: 214.5, r: 5.2, accent: "emerald", labelEn: "Dammam", labelAr: "الدمام" },
+  { id: "neom", x: 101.1, y: 168, r: 4.8, accent: "gold", labelEn: "NEOM", labelAr: "نيوم" },
+  { id: "madinah", x: 212, y: 269, r: 4.4, accent: "emerald", labelEn: "Madinah", labelAr: "المدينة" },
+  { id: "abha", x: 285.5, y: 442.9, r: 4.2, accent: "emerald", labelEn: "Abha", labelAr: "أبها" },
+  { id: "tabuk", x: 134.8, y: 160.2, r: 4, accent: "emerald", labelEn: "Tabuk", labelAr: "تبوك" },
+  { id: "jizan", x: 286.6, y: 479.9, r: 3.8, accent: "emerald", labelEn: "Jazan", labelAr: "جازان" },
 ];
 
 const LINKS: [HubId, HubId][] = [
@@ -55,11 +60,16 @@ function hub(id: HubId) {
 type Variant = "hero" | "canvas" | "compact";
 
 /**
- * Recognizable stylized KSA outline (N→E→S→W):
- * Gulf bulge east, Empty Quarter SE, Red Sea west, NW toward NEOM/Tabuk.
+ * TRUE Saudi Arabia silhouette — real border geometry (76-point national
+ * boundary ring from the public world.geo.json dataset, Natural Earth derived),
+ * projected equirectangular with cos(mid-latitude) x-correction into this
+ * 700x560 viewBox. Recognizable features preserved: the Jordan/Iraq zigzag
+ * border (NW), the Gulf coast with the Qatar notch (E), the far-eastern
+ * UAE/Oman corner, the Empty Quarter southern taper, the Yemen border, and the
+ * long Red Sea diagonal (W). Stylized rendering only — not an official emblem.
  */
 const KSA_FACE =
-  "M155 95 L175 70 L230 55 L290 48 L350 52 L410 68 L470 95 L520 130 L555 175 L575 230 L580 280 L565 330 L540 370 L505 410 L460 448 L400 475 L340 490 L290 495 L250 485 L225 455 L210 415 L195 370 L175 320 L155 270 L140 220 L135 170 L145 125 Z";
+  "M292.4 495 L289.1 483.1 L281.4 474.7 L279.5 463.6 L266.4 453.7 L252.8 430.3 L245.7 407.7 L228.1 388.5 L216.8 384 L200 357.4 L197.1 338.1 L198.2 321.6 L183.6 290.7 L171.7 279.9 L158 274.1 L149.7 258.2 L151.1 251.9 L144 237.5 L136.6 231.3 L126.7 210.6 L111.3 188.1 L98.3 169 L85.7 169.2 L89.6 153.9 L90.8 144.1 L93.9 133 L122.1 137.5 L133.1 128.9 L139.2 118.9 L158.5 115 L162.7 105.7 L171.1 101 L145.8 73.2 L196.6 59.2 L201.5 55 L232 62.5 L269.8 82 L341.3 138 L388.5 140.2 L411.1 142.9 L417.4 156.1 L435.4 155.4 L445.3 179.4 L457.8 185.8 L462.1 195.5 L479.4 207.2 L481 218.7 L478.4 228 L481.6 237.3 L488.9 245.1 L492.3 254.3 L496.1 261.1 L503.8 266.6 L510.8 264.6 L515.6 275.2 L516.6 281.7 L526.3 309.9 L602.6 323.9 L607.7 318 L619.3 337.7 L602.4 393.4 L526.3 421.2 L453.1 431.9 L429.5 444.4 L411.3 473.6 L399.4 478.2 L393.1 469 L383.4 470.4 L358.9 467.6 L354.2 464.8 L324.9 465.4 L318 468 L307.6 460.7 L300.9 474.4 L303.5 486.1 L292.4 495 Z";
 
 const EXTRUDE_Y = 34;
 
@@ -84,7 +94,6 @@ export function SaudiMap3D({
 }) {
   const uid = `ksa3d-${variant}`;
   const dense = variant !== "compact";
-  const extruded = offsetPath(KSA_FACE, EXTRUDE_Y);
 
   return (
     <div className={className} aria-hidden>
@@ -148,16 +157,18 @@ export function SaudiMap3D({
             </pattern>
           </defs>
 
-          <ellipse cx="360" cy="340" rx="250" ry="150" fill={`url(#${uid}-aura)`} />
+          <ellipse cx="355" cy="290" rx="275" ry="170" fill={`url(#${uid}-aura)`} />
 
-          {/* Extruded volume */}
-          <path d={extruded} fill={`url(#${uid}-wall)`} opacity="0.95" />
-          {/* Bridge walls between face and extrusion (east & south edges approx) */}
-          <path
-            d={`M580 280 L580 ${280 + EXTRUDE_Y} L565 ${330 + EXTRUDE_Y} L540 ${370 + EXTRUDE_Y} L505 ${410 + EXTRUDE_Y} L460 ${448 + EXTRUDE_Y} L400 ${475 + EXTRUDE_Y} L340 ${490 + EXTRUDE_Y} L290 ${495 + EXTRUDE_Y} L250 ${485 + EXTRUDE_Y} L225 ${455 + EXTRUDE_Y} L210 ${415 + EXTRUDE_Y} L195 ${370 + EXTRUDE_Y} L175 ${320 + EXTRUDE_Y} L155 ${270 + EXTRUDE_Y} L140 ${220 + EXTRUDE_Y} L135 ${170 + EXTRUDE_Y} L145 ${125 + EXTRUDE_Y} L155 95 L145 125 L135 170 L140 220 L155 270 L175 320 L195 370 L210 415 L225 455 L250 485 L290 495 L340 490 L400 475 L460 448 L505 410 L540 370 L565 330 L580 280 Z`}
-            fill={`url(#${uid}-wall)`}
-            opacity="0.85"
-          />
+          {/* Extruded volume: stacked vertical offsets of the true outline form
+              solid side walls for any silhouette (no hand-drawn bridge path). */}
+          {Array.from({ length: 9 }, (_, i) => (
+            <path
+              key={i}
+              d={offsetPath(KSA_FACE, (EXTRUDE_Y * (9 - i)) / 9)}
+              fill={`url(#${uid}-wall)`}
+              opacity={0.95}
+            />
+          ))}
 
           <path
             d={KSA_FACE}
@@ -168,7 +179,7 @@ export function SaudiMap3D({
           />
 
           <g clipPath={`url(#${uid}-clip)`}>
-            <rect x="100" y="40" width="520" height="480" fill={`url(#${uid}-grid)`} />
+            <rect x="80" y="50" width="545" height="450" fill={`url(#${uid}-grid)`} />
             {dense && (
               <>
                 <path d="M170 160c80-20 170-26 260-8 75 15 145 52 190 100" stroke="#2f9e6e" strokeOpacity="0.32" strokeWidth="1.15" />
