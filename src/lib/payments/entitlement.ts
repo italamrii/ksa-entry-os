@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { entitlementsFor, tierFromPaidPlans, type Entitlements } from "@/lib/payments/entitlements";
 
 /**
  * Server-side entitlement check. Never trust client-reported payment status.
@@ -25,4 +26,17 @@ export async function userHasVerifiedPaidAccess(
     select: { id: true },
   });
   return Boolean(anyPaid);
+}
+
+/**
+ * Server-side entitlement resolution. Reads only VERIFIED PAID payments —
+ * never client-supplied state or hidden frontend flags.
+ */
+export async function resolveEntitlements(userId: string): Promise<Entitlements> {
+  const paid = await prisma.payment.findMany({
+    where: { userId, status: "PAID" },
+    select: { request: { select: { plan: true } } },
+  });
+  const plans = paid.map((p) => p.request.plan);
+  return entitlementsFor(tierFromPaidPlans(plans));
 }

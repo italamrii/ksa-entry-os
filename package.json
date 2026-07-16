@@ -23,8 +23,10 @@
     "test:rules": "tsx scripts/test-rules.ts",
     "test:governance": "tsx scripts/test-governance.ts",
     "test:unit": "vitest run",
-    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts && tsx scripts/test-governance.ts",
-    "postinstall": "prisma generate"
+    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts && tsx scripts/test-governance.ts && tsx scripts/test-coverage.ts",
+    "postinstall": "prisma generate",
+    "db:seed:reference": "tsx prisma/seed.ts",
+    "test:coverage": "tsx scripts/test-coverage.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -57,6 +59,7 @@
     "sonner": "^2.0.7",
     "tailwind-merge": "^3.6.0",
     "tailwindcss": "^4",
+    "tsx": "^4.22.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
@@ -66,7 +69,6 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "prisma": "^6.19.0",
-    "tsx": "^4.22.4",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

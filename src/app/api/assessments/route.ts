@@ -8,6 +8,7 @@ import { rateLimitAsync, getClientIp, rateLimitResponse } from "@/lib/rate-limit
 import { createAuditLog } from "@/lib/audit";
 import { getOrCreatePrimaryOrganizationId } from "@/lib/organizations";
 import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
+import { assessCoverage, alertZeroCoverage } from "@/lib/knowledge/coverage";
 
 export const runtime = "nodejs";
 
@@ -101,6 +102,25 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Never present an empty roadmap as a completed result: classify coverage and
+    // raise an admin governance alert when nothing governed matched.
+    const coverage = await assessCoverage({
+      matchedCount: matched.length,
+      context: {
+        sectorId: data.sectorId ?? null,
+        companyType: user.companyType,
+        entryGoal: user.entryGoal,
+        businessActivity: data.businessActivity ?? null,
+      },
+    });
+    if (coverage.status === "INSUFFICIENT_KNOWLEDGE") {
+      await alertZeroCoverage({
+        assessmentId: assessment.id,
+        knowledgeBaseEmpty: coverage.knowledgeBaseEmpty,
+        missingInputKeys: coverage.missingInputs.map((i) => i.key),
+      });
+    }
+
     await createAuditLog({
       userId: user.id,
       organizationId,
@@ -111,7 +131,7 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json(
-      { assessmentId: assessment.id, stepCount: matched.length },
+      { assessmentId: assessment.id, stepCount: matched.length, coverage: coverage.status },
       { headers: noStore }
     );
   } catch (err) {

@@ -5,8 +5,8 @@
     "buildCommand": "npm run build"
   },
   "deploy": {
-    "//": "Production DB workflow is `prisma migrate deploy` — NEVER `prisma db push`. preDeployCommand runs the migrations once before the new release goes live.",
-    "preDeployCommand": "npx prisma migrate deploy",
+    "//": "Production DB workflow is `prisma migrate deploy` — NEVER `prisma db push`. preDeployCommand runs migrations AND the idempotent reference-data seed once before the new release goes live. The seed is upsert-only (never deletes user data) and skips the admin account unless SEED_ADMIN_PASSWORD is set; without it a recreated database has an empty knowledge base and assessments return 0 steps.",
+    "preDeployCommand": "npx prisma migrate deploy && npx tsx prisma/seed.ts",
     "startCommand": "npm run start",
     "restartPolicyType": "ON_FAILURE",
     "restartPolicyMaxRetries": 3

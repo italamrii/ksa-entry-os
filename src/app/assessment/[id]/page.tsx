@@ -13,6 +13,8 @@ import { Download, CreditCard, Lock } from "lucide-react";
 import { getAssessment } from "@/lib/i18n/content";
 import type { Locale } from "@/lib/i18n";
 import { userHasVerifiedPaidAccess } from "@/lib/payments/entitlement";
+import { assessCoverage, coverageMessage } from "@/lib/knowledge/coverage";
+import { InsufficientKnowledgeState } from "@/components/workspace/states";
 
 export default async function AssessmentResultPage({
   params,
@@ -42,6 +44,17 @@ export default async function AssessmentResultPage({
   const previewLimit = getPreviewLimit(!!hasPaid);
   const steps = assessment.steps.map((s) => s.requirement);
 
+  // Never present an empty roadmap as a completed result.
+  const coverage = await assessCoverage({
+    matchedCount: steps.length,
+    context: {
+      sectorId: assessment.sectorId,
+      companyType: user.companyType,
+      entryGoal: user.entryGoal,
+      businessActivity: assessment.businessActivity,
+    },
+  });
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader locale={locale} isAuthenticated isAdmin={user.role === "ADMIN"} />
@@ -51,7 +64,9 @@ export default async function AssessmentResultPage({
             <div>
               <h1 className="text-headline text-foreground">{A.resultTitle}</h1>
               <p className="mt-1 text-sm text-[var(--muted)]">
-                {steps.length} {A.resultSubtitle}
+                {coverage.status === "COVERED"
+                  ? `${steps.length} ${A.resultSubtitle}`
+                  : coverageMessage(coverage, locale)}
               </p>
             </div>
             <div className="flex gap-2">
@@ -80,6 +95,13 @@ export default async function AssessmentResultPage({
           )}
 
           <div className="space-y-4">
+            {coverage.status === "INSUFFICIENT_KNOWLEDGE" && (
+              <InsufficientKnowledgeState
+                locale={locale}
+                message={coverageMessage(coverage, locale)}
+                missingInputs={coverage.missingInputs}
+              />
+            )}
             {steps.slice(0, previewLimit).map((step, i) => (
               <RoadmapStepCard key={step.id} step={step} index={i} locale={locale} />
             ))}

@@ -170,3 +170,53 @@ export function ErrorState({ locale }: StateProps) {
     />
   );
 }
+
+/**
+ * Insufficient governed knowledge — shown INSTEAD of a silent "0 steps" result.
+ * Explains what is missing and never presents an empty roadmap as complete.
+ * Safety copy is always shown regardless of plan.
+ */
+export function InsufficientKnowledgeState({
+  locale,
+  message,
+  missingInputs,
+}: StateProps & { message: string; missingInputs: { key: string; labelEn: string; labelAr: string }[] }) {
+  return (
+    <div className="surface-panel rounded-[var(--radius-lg)] border border-[color-mix(in_srgb,var(--warning)_30%,transparent)] bg-[color-mix(in_srgb,var(--warning)_6%,transparent)] p-6">
+      <div className="flex items-start gap-3">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[var(--warning)]" aria-hidden />
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-foreground">
+            {t(locale, "Roadmap not issued — more information needed", "لم تصدر خارطة الطريق — المعلومات غير كافية")}
+          </h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">{message}</p>
+          {missingInputs.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {missingInputs.map((m) => (
+                <li
+                  key={m.key}
+                  className="rounded-md border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 px-2.5 py-1 text-xs text-foreground"
+                >
+                  {locale === "ar" ? m.labelAr : m.labelEn}
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="mt-3 text-xs text-[var(--muted)]">
+            {t(
+              locale,
+              "This is not a completed roadmap. Verify all requirements with the official authority before acting.",
+              "هذه ليست خارطة طريق مكتملة. تحقق من جميع المتطلبات مع الجهة الرسمية قبل اتخاذ أي إجراء."
+            )}
+          </p>
+          <Link
+            href={localeHref("/assessment/new", locale)}
+            className="mt-4 inline-flex text-sm font-medium text-[var(--accent-bright)] outline-none focus-visible:ring-2 focus-visible:ring-[color-mix(in_srgb,var(--accent)_45%,transparent)]"
+          >
+            {t(locale, "Update your answers", "حدّث إجاباتك")}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
