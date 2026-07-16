@@ -65,4 +65,15 @@ describe("landing primary CTA routing by auth state", () => {
     expect(resolveLandingSecondaryCtaHref(true, "en")).toBe("/workspace");
     expect(resolveLandingSecondaryCtaHref(true, "ar")).toBe("/workspace?lang=ar");
   });
+
+  it("never sends an anonymous visitor through a protected route (regression: /dashboard?lang=ar hang)", () => {
+    // The reported bug: anonymous visitors hit /dashboard, which server-redirected
+    // to /login, producing a blank/hanging screen. The primary CTA must resolve
+    // straight to /register for anonymous visitors in every locale.
+    const protectedPaths = ["/dashboard", "/workspace", "/assessment/new", "/settings", "/requests", "/payments"];
+    const path = resolveLandingPrimaryCtaPath({ status: "anonymous" });
+    expect(protectedPaths).not.toContain(path);
+    expect(path).toBe("/register");
+    expect(resolveLandingPrimaryCtaHref({ status: "anonymous" }, "ar")).not.toMatch(/^\/dashboard/);
+  });
 });
