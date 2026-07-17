@@ -26,7 +26,8 @@
     "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts && tsx scripts/test-governance.ts && tsx scripts/test-coverage.ts",
     "postinstall": "prisma generate",
     "db:seed:reference": "tsx prisma/seed.ts",
-    "test:coverage": "tsx scripts/test-coverage.ts"
+    "test:coverage": "tsx scripts/test-coverage.ts",
+    "test:routes": "tsx scripts/test-routes.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

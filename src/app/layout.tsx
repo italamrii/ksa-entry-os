@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Fraunces, Geist_Mono, Noto_Sans_Arabic } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { LocaleDocumentSync } from "@/components/locale-document-sync";
 import { APP_NAME, APP_TAGLINE_EN } from "@/lib/constants";
 
 const manrope = Manrope({
@@ -51,6 +52,7 @@ export default function RootLayout({
       className={`${manrope.variable} ${fraunces.variable} ${geistMono.variable} ${notoArabic.variable} h-full dark`}
     >
       <body className="min-h-full flex flex-col antialiased">
+        <LocaleDocumentSync />
         <Providers>{children}</Providers>
       </body>
     </html>
