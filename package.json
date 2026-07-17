@@ -23,11 +23,12 @@
     "test:rules": "tsx scripts/test-rules.ts",
     "test:governance": "tsx scripts/test-governance.ts",
     "test:unit": "vitest run",
-    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts && tsx scripts/test-governance.ts && tsx scripts/test-coverage.ts",
+    "test": "vitest run && tsx scripts/test-security.ts && tsx scripts/test-domain.ts && tsx scripts/test-rules.ts && tsx scripts/test-governance.ts && tsx scripts/test-coverage.ts && tsx scripts/test-admin.ts",
     "postinstall": "prisma generate",
     "db:seed:reference": "tsx prisma/seed.ts",
     "test:coverage": "tsx scripts/test-coverage.ts",
-    "test:routes": "tsx scripts/test-routes.ts"
+    "test:routes": "tsx scripts/test-routes.ts",
+    "test:admin": "tsx scripts/test-admin.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
