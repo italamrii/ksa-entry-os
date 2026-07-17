@@ -545,3 +545,66 @@ export function getAssessment(locale: Locale) {
     Object.entries(c).map(([key, val]) => [key, b(locale, val as Bilingual)])
   ) as Record<keyof typeof assessmentContent, string>;
 }
+
+export const authContent = {
+  loginTitle: { en: "Log in to", ar: "تسجيل الدخول إلى" },
+  loginSubtitle: { en: "Enter your credentials to open your decision workspace", ar: "أدخل بياناتك لفتح مساحة قراراتك" },
+  email: { en: "Email", ar: "البريد الإلكتروني" },
+  password: { en: "Password", ar: "كلمة المرور" },
+  signIn: { en: "Sign in", ar: "تسجيل الدخول" },
+  signingIn: { en: "Signing in...", ar: "جارٍ تسجيل الدخول..." },
+  noAccount: { en: "Don't have an account?", ar: "ليس لديك حساب؟" },
+  registerLink: { en: "Register", ar: "إنشاء حساب" },
+  welcomeBack: { en: "Welcome back!", ar: "مرحبًا بعودتك!" },
+  loginFailed: { en: "Login failed", ar: "فشل تسجيل الدخول" },
+  somethingWrong: { en: "Something went wrong", ar: "حدث خطأ ما" },
+  registerTitle: { en: "Create your", ar: "أنشئ حسابك في" },
+  registerTitleSuffix: { en: "account", ar: "" },
+  registerSubtitle: { en: "Minimal information only — no sensitive documents required", ar: "معلومات أساسية فقط — لا حاجة لمستندات حساسة" },
+  fullName: { en: "Full name", ar: "الاسم الكامل" },
+  companyName: { en: "Company name", ar: "اسم الشركة" },
+  country: { en: "Country", ar: "الدولة" },
+  sector: { en: "Sector", ar: "القطاع" },
+  selectSector: { en: "Select sector", ar: "اختر القطاع" },
+  companyType: { en: "Company type", ar: "نوع الشركة" },
+  selectType: { en: "Select type", ar: "اختر النوع" },
+  entryGoal: { en: "Goal for entering Saudi Arabia", ar: "هدف دخول السوق السعودي" },
+  selectGoal: { en: "Select goal", ar: "اختر الهدف" },
+  createAccount: { en: "Create account", ar: "إنشاء الحساب" },
+  creatingAccount: { en: "Creating account...", ar: "جارٍ إنشاء الحساب..." },
+  accountCreated: { en: "Account created!", ar: "تم إنشاء الحساب!" },
+  registrationFailed: { en: "Registration failed", ar: "فشل إنشاء الحساب" },
+  haveAccount: { en: "Already have an account?", ar: "لديك حساب بالفعل؟" },
+  loginLink: { en: "Log in", ar: "تسجيل الدخول" },
+};
+
+export function getAuth(locale: Locale) {
+  return Object.fromEntries(
+    Object.entries(authContent).map(([key, val]) => [key, b(locale, val as Bilingual)])
+  ) as Record<keyof typeof authContent, string>;
+}
+
+/**
+ * Client-side zod validation emits English messages (they double as API error
+ * bodies). Translate the known ones for display; fall back to the original so a
+ * new message is never silently hidden.
+ */
+const validationMessagesAr: Record<string, string> = {
+  "Name must be at least 2 characters": "يجب ألا يقل الاسم عن حرفين",
+  "Invalid email address": "بريد إلكتروني غير صالح",
+  "Invalid email": "بريد إلكتروني غير صالح",
+  "Password must be at least 8 characters": "يجب ألا تقل كلمة المرور عن 8 أحرف",
+  "Must contain an uppercase letter": "يجب أن تحتوي على حرف كبير",
+  "Must contain a lowercase letter": "يجب أن تحتوي على حرف صغير",
+  "Must contain a number": "يجب أن تحتوي على رقم",
+  "Company type is required": "نوع الشركة مطلوب",
+  "Entry goal is required": "هدف الدخول مطلوب",
+  "String must contain at least 2 character(s)": "يجب ألا يقل عن حرفين",
+  "String must contain at least 1 character(s)": "هذا الحقل مطلوب",
+};
+
+export function translateValidation(message: string | undefined, locale: Locale): string | undefined {
+  if (!message) return message;
+  if (locale !== "ar") return message;
+  return validationMessagesAr[message] ?? message;
+}

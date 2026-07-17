@@ -10,12 +10,11 @@ export async function POST(request: Request) {
     await createAuditLog({ userId: user.id, action: "auth.logout" });
   }
   await revokeCurrentSession();
-  // Preserve the caller locale (?lang=ar) across the logout redirect.
+  // Preserve the caller locale (?lang=ar) across the logout redirect. Base the
+  // redirect on the request's own origin — an env-var base (NEXT_PUBLIC_APP_URL)
+  // silently sends production users to localhost when the variable is unset.
   const lang = new URL(request.url).searchParams.get("lang") === "ar" ? "?lang=ar" : "";
-  const res = NextResponse.redirect(
-    new URL(`/login${lang}`, process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"),
-    { status: 303 }
-  );
+  const res = NextResponse.redirect(new URL(`/login${lang}`, request.url), { status: 303 });
   res.headers.set("Cache-Control", "no-store");
   return res;
 }

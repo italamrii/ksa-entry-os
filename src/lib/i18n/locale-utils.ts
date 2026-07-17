@@ -27,3 +27,15 @@ export function localeHref(path: string, locale: Locale): string {
 export function getLocaleFromSearch(lang?: string | null): Locale {
   return lang === "ar" ? "ar" : "en";
 }
+
+/**
+ * Sanitize a `?next=` redirect target: same-origin path only. Rejects
+ * protocol-relative (`//host`), absolute URLs, and API paths so a crafted link
+ * can never bounce a fresh login off-site or into a non-page endpoint.
+ */
+export function safeInternalPath(next: string | null | undefined): string | null {
+  if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/api")) {
+    return null;
+  }
+  return next;
+}

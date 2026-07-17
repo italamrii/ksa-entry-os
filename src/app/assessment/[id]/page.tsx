@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { localeHref } from "@/lib/i18n/locale-utils";
+import { localeHref, getLocaleFromSearch } from "@/lib/i18n/locale-utils";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SiteHeader, DisclaimerBanner } from "@/components/layout/site-header";
@@ -18,11 +18,14 @@ import { InsufficientKnowledgeState } from "@/components/workspace/states";
 
 export default async function AssessmentResultPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ lang?: string }>;
 }) {
+  const urlLocale = getLocaleFromSearch((await searchParams).lang);
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) redirect(localeHref("/login", urlLocale));
 
   const { id } = await params;
   const locale = (user.locale as Locale) ?? "en";

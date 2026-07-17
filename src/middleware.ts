@@ -25,7 +25,6 @@ const protectedPaths = [
   "/admin",
 ];
 const adminPaths = ["/admin"];
-const authPaths = ["/login", "/register"];
 
 function applySecurityHeaders(response: NextResponse, isProduction: boolean) {
   for (const [key, value] of Object.entries(securityHeaders)) {
@@ -54,7 +53,6 @@ export async function middleware(request: NextRequest) {
 
   const isProtected = protectedPaths.some((p) => pathname.startsWith(p));
   const isAdmin = adminPaths.some((p) => pathname.startsWith(p));
-  const isAuth = authPaths.some((p) => pathname.startsWith(p));
 
   // Preserve the visitor's locale (?lang=ar) across every middleware redirect.
   const lang = request.nextUrl.searchParams.get("lang") === "ar" ? "ar" : null;
@@ -75,11 +73,13 @@ export async function middleware(request: NextRequest) {
     return applySecurityHeaders(denied, isProduction);
   }
 
-  if (isAuth && session) {
-    const dest = session.role === "ADMIN" ? "/admin" : "/dashboard";
-    const redirect = NextResponse.redirect(withLang(new URL(dest, request.url)));
-    return applySecurityHeaders(redirect, isProduction);
-  }
+  // /login and /register are deliberately NOT redirected here. The middleware can
+  // only verify the JWT cryptographically (edge — no DB); after a database
+  // recreation a stale-but-valid cookie would bounce /login → /dashboard while the
+  // page's DB-backed getCurrentUser() bounces /dashboard → /login: an infinite
+  // redirect loop (ERR_TOO_MANY_REDIRECTS). The auth pages perform the DB-backed
+  // "already signed in" redirect themselves, so login stays reachable and the
+  // stale cookie can always be replaced by a fresh sign-in.
 
   const response = NextResponse.next();
   return applySecurityHeaders(response, isProduction);
