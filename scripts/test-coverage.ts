@@ -132,6 +132,27 @@ async function main() {
   const stepless = await findPathwaysWithoutSteps();
   ok(`admin knowledge ops: 0 rules without source, ${stepless.length} pathways without steps, ${health.openAlerts} open alerts`);
 
+  // Published pathways without steps must be the known advisory/awareness set —
+  // their guidance IS the description, and authoring procedural steps for them
+  // would invent regulatory procedure without a source. Any procedural pathway
+  // shipping step-less is a defect.
+  const STEPLESS_ADVISORY = new Set([
+    "pw-market-entry-overview",
+    "pw-fast-timeline-planning",
+    "pw-fintech-licensing",
+    "pw-sfda-healthcare",
+    "pw-tourism-licensing",
+  ]);
+  const publishedStepless = await prisma.pathway.findMany({
+    where: { status: "PUBLISHED", steps: { none: {} } },
+    select: { slug: true, descriptionEn: true, descriptionAr: true },
+  });
+  for (const p of publishedStepless) {
+    if (!STEPLESS_ADVISORY.has(p.slug)) fail(`published pathway ${p.slug} has no steps and is not a known advisory pathway`);
+    if (!p.descriptionEn || !p.descriptionAr) fail(`advisory pathway ${p.slug} lacks a bilingual description`);
+  }
+  ok(`governance: ${publishedStepless.length} step-less published pathways are all advisory with bilingual content`);
+
   // --- Governance: DRAFT taxonomy must never reach a user ---
   const taxonomy = await prisma.pathway.findMany({
     where: { slug: { startsWith: "tx-" } },
