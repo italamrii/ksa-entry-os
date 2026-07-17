@@ -1,37 +1,13 @@
 import { PrismaClient, Prisma } from "@prisma/client";
-import { hashPassword } from "../src/lib/auth/password";
-import { provisionPersonalOrganization } from "../src/lib/organizations";
 import { extractDomain, classifyByDomain } from "../src/lib/governance/classification";
 import { FALLBACK_DISCLAIMERS } from "../src/lib/governance/disclaimers";
 import { seedPathwaySteps, seedActivities } from "./seed-knowledge";
 import { seedTaxonomyDraft } from "./seed-taxonomy";
+import { seedAdmin } from "./seed-admin";
 
 const prisma = new PrismaClient();
 
-const DEFAULT_ADMIN_PASSWORD = "ChangeMe123!Secure";
-
-/**
- * Whether to seed the admin user. Reference data ALWAYS seeds (it is the
- * knowledge base the evaluator needs); the admin account is optional.
- *
- * In production we never create an admin with the default password — but we
- * SKIP rather than throw, so the deploy-time reference-data seed cannot fail a
- * release. Set SEED_ADMIN_PASSWORD to provision the admin.
- */
-function adminSeedDecision(): { seed: boolean; reason?: string } {
-  const isProduction = process.env.NODE_ENV === "production";
-  const password = process.env.SEED_ADMIN_PASSWORD;
-  if (!isProduction) return { seed: true };
-  if (!password || password === DEFAULT_ADMIN_PASSWORD) {
-    return { seed: false, reason: "SEED_ADMIN_PASSWORD unset or default — skipping admin seed (reference data still seeded)" };
-  }
-  return { seed: true };
-}
-
 async function main() {
-  const adminEmail = process.env.SEED_ADMIN_EMAIL ?? "admin@ksaentryos.com";
-  const adminPassword = process.env.SEED_ADMIN_PASSWORD ?? DEFAULT_ADMIN_PASSWORD;
-  const adminDecision = adminSeedDecision();
 
   const sectors = [
     { slug: "technology-saas", nameEn: "Technology / SaaS", nameAr: "التقنية / SaaS" },
@@ -508,45 +484,19 @@ async function main() {
     await prisma.entryObjective.upsert({ where: { slug: o.slug }, update: o, create: o });
   }
 
-  if (!adminDecision.seed) {
-    console.warn();
+  const adminResult = await seedAdmin(prisma);
+  if (!adminResult.provisioned) {
+    console.warn(`Admin provisioning skipped: ${adminResult.reason} (reference data still seeded)`);
   } else {
-    const passwordHash = await hashPassword(adminPassword);
-    const admin = await prisma.user.upsert({
-      where: { email: adminEmail },
-      update: { passwordHash, role: "ADMIN" },
-      create: {
-        name: "Admin",
-        email: adminEmail,
-        passwordHash,
-        role: "ADMIN",
-        companyName: "KSA Entry OS",
-        country: "Saudi Arabia",
-        companyType: "local",
-        entryGoal: "explore",
-        onboardingDone: true,
-      },
-    });
-
-    // Ensure the admin has a personal organization (OWNER membership + profile).
-    await provisionPersonalOrganization(prisma, {
-      userId: admin.id,
-      name: "KSA Entry OS",
-      profile: {
-        companyName: "KSA Entry OS",
-        originCountry: "Saudi Arabia",
-        companyType: "local",
-        entryGoal: "explore",
-        locale: "en",
-        onboardingDone: true,
-      },
-    });
+    console.log(
+      `Admin ${adminResult.created ? "created" : "updated"}` +
+        (adminResult.passwordRotated
+          ? ` — password rotated, ${adminResult.sessionsRevoked} session(s) revoked`
+          : "")
+    );
   }
 
   console.log("Seed completed successfully");
-  if (process.env.NODE_ENV !== "production") {
-    console.log(`Admin email configured: ${adminEmail}`);
-  }
 }
 
 main()

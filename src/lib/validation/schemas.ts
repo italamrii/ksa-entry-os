@@ -8,16 +8,19 @@ function optionalId(value: unknown): string | undefined {
   return trimmed === "" ? undefined : trimmed;
 }
 
+/** Canonical strong-password rule — shared by registration and admin provisioning. */
+export const strongPasswordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(128)
+  .regex(/[A-Z]/, "Must contain an uppercase letter")
+  .regex(/[a-z]/, "Must contain a lowercase letter")
+  .regex(/[0-9]/, "Must contain a number");
+
 export const registerSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters").max(100),
   email: z.string().trim().email("Invalid email address"),
-  password: z
-    .string()
-    .min(8, "Password must be at least 8 characters")
-    .max(128)
-    .regex(/[A-Z]/, "Must contain an uppercase letter")
-    .regex(/[a-z]/, "Must contain a lowercase letter")
-    .regex(/[0-9]/, "Must contain a number"),
+  password: strongPasswordSchema,
   companyName: z.string().trim().min(2).max(200),
   country: z.string().trim().min(2).max(100),
   sectorId: z.preprocess(optionalId, z.string().optional()),
@@ -89,3 +92,14 @@ export type AssessmentInput = z.infer<typeof assessmentSchema>;
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
+
+/** Admin subscription administration. The org is resolved server-side from the
+ *  target user — clients never send an organization id. */
+export const adminSubscriptionSchema = z.object({
+  targetUserId: z.string().min(1),
+  action: z.enum(["grant", "activate", "cancel", "expire"]),
+  plan: z.enum(["FREE", "PROFESSIONAL", "BUSINESS"]).optional(),
+  /** ISO datetime, or null to clear the period end. */
+  currentPeriodEnd: z.union([z.string().datetime(), z.null()]).optional(),
+});
+export type AdminSubscriptionInput = z.infer<typeof adminSubscriptionSchema>;
