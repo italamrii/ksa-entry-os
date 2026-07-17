@@ -5,7 +5,7 @@ import { LogoLockup, LogoMark } from "@/components/brand/logo";
 import type { Locale } from "@/lib/i18n";
 import { nav, t } from "@/lib/i18n";
 import { localeHref } from "@/lib/i18n/locale-utils";
-import { cn } from "@/lib/utils";
+import { LocaleSwitch } from "@/components/layout/locale-switch";
 
 interface SiteHeaderProps {
   locale?: Locale;
@@ -50,15 +50,7 @@ export function SiteHeader({ locale = "en", isAuthenticated = false, isAdmin = f
         </nav>
 
         <div className="flex items-center gap-2">
-          <Link
-            href={locale === "ar" ? localeHref("/", "en") : localeHref("/", "ar")}
-            className={cn(
-              "rounded-[var(--radius-sm)] px-2.5 py-1.5 text-xs font-semibold transition",
-              "text-[var(--muted)] hover:bg-[var(--surface-muted)] hover:text-[var(--highlight)]"
-            )}
-          >
-            {locale === "ar" ? "EN" : "عربي"}
-          </Link>
+          <LocaleSwitch />
           {isAuthenticated ? (
             <form action={localeHref("/api/auth/logout", locale)} method="POST">
               <Button type="submit" variant="ghost" size="sm">

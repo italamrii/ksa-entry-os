@@ -28,7 +28,10 @@ export default async function AssessmentResultPage({
   if (!user) redirect(localeHref("/login", urlLocale));
 
   const { id } = await params;
-  const locale = (user.locale as Locale) ?? "en";
+  // Rendered locale comes from the URL (single source of truth for every page);
+  // the DB preference only seeds ?lang= on the post-login redirect. This is what
+  // makes the header language switcher actually change the page language.
+  const locale: Locale = urlLocale;
   const A = getAssessment(locale);
 
   const assessment = await prisma.assessment.findFirst({
@@ -81,7 +84,7 @@ export default async function AssessmentResultPage({
                   </Button>
                 </a>
               ) : (
-                <Link href={`/payments?assessment=${id}&plan=PROFESSIONAL`}>
+                <Link href={localeHref(`/payments?assessment=${id}&plan=PROFESSIONAL`, locale)}>
                   <Button className="gap-2">
                     <CreditCard className="h-4 w-4" />
                     {A.upgrade}
@@ -114,7 +117,7 @@ export default async function AssessmentResultPage({
                 <p className="mt-3 font-medium text-foreground">
                   {steps.length - previewLimit} {A.lockedNote}
                 </p>
-                <Link href={`/payments?assessment=${id}&plan=PROFESSIONAL`} className="mt-4 inline-block">
+                <Link href={localeHref(`/payments?assessment=${id}&plan=PROFESSIONAL`, locale)} className="mt-4 inline-block">
                   <Button>{A.unlock}</Button>
                 </Link>
               </div>

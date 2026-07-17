@@ -15,7 +15,10 @@ export default async function PaymentsListPage({ searchParams }: { searchParams:
   const user = await getCurrentUser();
   if (!user) redirect(localeHref("/login", urlLocale));
 
-  const locale = (user.locale as Locale) ?? "en";
+  // Rendered locale comes from the URL (single source of truth for every page);
+  // the DB preference only seeds ?lang= on the post-login redirect. This is what
+  // makes the header language switcher actually change the page language.
+  const locale: Locale = urlLocale;
   const payments = await prisma.payment.findMany({
     where: { userId: user.id },
     orderBy: { createdAt: "desc" },

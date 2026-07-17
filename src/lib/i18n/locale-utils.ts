@@ -29,6 +29,30 @@ export function getLocaleFromSearch(lang?: string | null): Locale {
 }
 
 /**
+ * Canonical locale-switch URL: SAME pathname, same query, same hash — only the
+ * `lang` parameter changes (set for Arabic, removed for English, never
+ * duplicated). Every language switcher must build its target through this
+ * helper; a hardcoded pathname here is how "switch language" used to mean
+ * "go back to the landing page".
+ */
+export function switchLocalePath(
+  pathname: string,
+  search: string,
+  hash: string,
+  target: Locale
+): string {
+  const params = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  if (target === "ar") {
+    params.set("lang", "ar");
+  } else {
+    params.delete("lang");
+  }
+  const qs = params.toString();
+  const normalizedHash = hash && !hash.startsWith("#") ? `#${hash}` : hash;
+  return `${pathname}${qs ? `?${qs}` : ""}${normalizedHash ?? ""}`;
+}
+
+/**
  * Sanitize a `?next=` redirect target: same-origin path only. Rejects
  * protocol-relative (`//host`), absolute URLs, and API paths so a crafted link
  * can never bounce a fresh login off-site or into a non-page endpoint.

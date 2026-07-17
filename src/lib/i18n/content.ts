@@ -608,3 +608,85 @@ export function translateValidation(message: string | undefined, locale: Locale)
   if (locale !== "ar") return message;
   return validationMessagesAr[message] ?? message;
 }
+
+export const onboardingContent = {
+  overline: { en: "Onboarding", ar: "الإعداد الأولي" },
+  title: { en: "Complete your profile", ar: "أكمل ملفك التعريفي" },
+  subtitle: { en: "Help us personalize your Saudi market entry roadmap", ar: "ساعدنا في تخصيص خارطة طريقك لدخول السوق السعودي" },
+  select: { en: "Select", ar: "اختر" },
+  preferredLanguage: { en: "Preferred language", ar: "اللغة المفضلة" },
+  saving: { en: "Saving...", ar: "جارٍ الحفظ..." },
+  continueBtn: { en: "Continue to dashboard", ar: "المتابعة إلى لوحة التحكم" },
+  saveFailed: { en: "Failed to save", ar: "فشل الحفظ" },
+  profileUpdated: { en: "Profile updated!", ar: "تم تحديث الملف!" },
+};
+
+export function getOnboarding(locale: Locale) {
+  return Object.fromEntries(
+    Object.entries(onboardingContent).map(([key, val]) => [key, b(locale, val as Bilingual)])
+  ) as Record<keyof typeof onboardingContent, string>;
+}
+
+export const settingsContent = {
+  overline: { en: "Account", ar: "الحساب" },
+  title: { en: "Settings", ar: "الإعدادات" },
+  subtitle: { en: "Profile and language for your decision workspace", ar: "الملف واللغة لمساحة قراراتك" },
+  profile: { en: "Profile", ar: "الملف التعريفي" },
+  name: { en: "Name", ar: "الاسم" },
+  language: { en: "Language", ar: "اللغة" },
+  saving: { en: "Saving...", ar: "جارٍ الحفظ..." },
+  saveChanges: { en: "Save changes", ar: "حفظ التغييرات" },
+  saveFailed: { en: "Failed to save settings", ar: "فشل حفظ الإعدادات" },
+  saved: { en: "Settings saved!", ar: "تم حفظ الإعدادات!" },
+  dangerZone: { en: "Danger zone", ar: "منطقة الخطر" },
+  deletionInfo: { en: "Request deletion of your account and associated data.", ar: "اطلب حذف حسابك والبيانات المرتبطة به." },
+  requestDeletion: { en: "Request data deletion", ar: "طلب حذف البيانات" },
+  deletionConfirm: { en: "Are you sure you want to request account deletion?", ar: "هل أنت متأكد من رغبتك في طلب حذف الحساب؟" },
+  requestFailed: { en: "Request failed", ar: "فشل الطلب" },
+  deletionSubmitted: { en: "Deletion request submitted", ar: "تم إرسال طلب الحذف" },
+  somethingWrong: { en: "Something went wrong", ar: "حدث خطأ ما" },
+};
+
+export function getSettings(locale: Locale) {
+  return Object.fromEntries(
+    Object.entries(settingsContent).map(([key, val]) => [key, b(locale, val as Bilingual)])
+  ) as Record<keyof typeof settingsContent, string>;
+}
+
+export const paymentDetailContent = {
+  title: { en: "Payment Status", ar: "حالة الدفع" },
+  loading: { en: "Loading...", ar: "جارٍ التحميل..." },
+  loadFailed: { en: "Unable to load payment", ar: "تعذر تحميل بيانات الدفع" },
+  notEnabled: { en: "Payments not yet enabled", ar: "المدفوعات غير مفعّلة بعد" },
+  notEnabledDetail: { en: "Card checkout is not configured. No payment was processed. Contact support or try again when online payments are available.", ar: "الدفع بالبطاقة غير مهيأ. لم تتم معالجة أي دفعة. تواصل مع الدعم أو حاول لاحقًا عند توفر الدفع الإلكتروني." },
+  returnDashboard: { en: "Return to dashboard", ar: "العودة إلى لوحة التحكم" },
+  demoOnly: { en: "Development demo only — not a real payment. Disabled in production.", ar: "عرض تجريبي للتطوير فقط — ليست دفعة حقيقية. معطّل في الإنتاج." },
+  processing: { en: "Processing...", ar: "جارٍ المعالجة..." },
+  simulateSuccess: { en: "Simulate successful payment (dev)", ar: "محاكاة دفعة ناجحة (تطوير)" },
+  simulateFailure: { en: "Simulate failed payment (dev)", ar: "محاكاة دفعة فاشلة (تطوير)" },
+  providerPending: { en: "Complete checkout with the payment provider. Status updates after verified webhook confirmation.", ar: "أكمل الدفع لدى مزود الدفع. تُحدَّث الحالة بعد تأكيد الإشعار الموثق." },
+  confirmed: { en: "Payment confirmed", ar: "تم تأكيد الدفع" },
+  demoRejected: { en: "Demo payment rejected", ar: "رُفضت الدفعة التجريبية" },
+  demoPaid: { en: "Demo payment marked paid (dev only)", ar: "سُجلت الدفعة التجريبية كمدفوعة (تطوير فقط)" },
+  demoFailed: { en: "Demo payment marked failed", ar: "سُجلت الدفعة التجريبية كفاشلة" },
+  somethingWrong: { en: "Something went wrong", ar: "حدث خطأ ما" },
+};
+
+/** Localized labels for the PaymentStatus enum — never render the raw value. */
+export const paymentStatusLabels: Record<string, Bilingual> = {
+  PENDING: { en: "Pending", ar: "قيد الانتظار" },
+  PAID: { en: "Paid", ar: "مدفوع" },
+  FAILED: { en: "Failed", ar: "فاشلة" },
+  REFUNDED: { en: "Refunded", ar: "مستردة" },
+};
+
+export function getPaymentDetail(locale: Locale) {
+  return Object.fromEntries(
+    Object.entries(paymentDetailContent).map(([key, val]) => [key, b(locale, val as Bilingual)])
+  ) as Record<keyof typeof paymentDetailContent, string>;
+}
+
+export function paymentStatusLabel(status: string, locale: Locale): string {
+  const l = paymentStatusLabels[status];
+  return l ? b(locale, l) : status;
+}

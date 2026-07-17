@@ -18,7 +18,10 @@ export default async function WorkspacePage({ searchParams }: { searchParams: Pr
   if (!user) redirect(localeHref("/login", urlLocale));
   if (!user.onboardingDone) redirect(localeHref("/onboarding", (user.locale as "en" | "ar") ?? urlLocale));
 
-  const locale = (user.locale as Locale) ?? "en";
+  // Rendered locale comes from the URL (single source of truth for every page);
+  // the DB preference only seeds ?lang= on the post-login redirect. This is what
+  // makes the header language switcher actually change the page language.
+  const locale: Locale = urlLocale;
   const context: WorkspaceContext = {
     companyName: user.companyName,
     country: user.country,

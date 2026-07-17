@@ -11,6 +11,7 @@ import { CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { localeHref } from "@/lib/i18n/locale-utils";
 import { useLocale } from "@/lib/i18n/use-locale";
+import { getPaymentDetail, paymentStatusLabel } from "@/lib/i18n/content";
 
 type PaymentStatus = "PENDING" | "PAID" | "FAILED" | "REFUNDED";
 
@@ -28,6 +29,7 @@ interface PaymentView {
 function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
   const locale = useLocale();
   const router = useRouter();
+  const P = getPaymentDetail(locale);
   const [payment, setPayment] = useState<PaymentView | null>(null);
   const [loading, setLoading] = useState(false);
   const [loadError, setLoadError] = useState(false);
@@ -65,15 +67,15 @@ function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
         }),
       });
       if (!res.ok) {
-        toast.error("Demo payment rejected");
+        toast.error(P.demoRejected);
         return;
       }
       const json = (await res.json()) as { status: PaymentStatus };
       setPayment((prev) => (prev ? { ...prev, status: json.status } : prev));
-      toast.success(success ? "Demo payment marked paid (dev only)" : "Demo payment marked failed");
+      toast.success(success ? P.demoPaid : P.demoFailed);
       if (success) setTimeout(() => router.push(localeHref("/dashboard", locale)), 1500);
     } catch {
-      toast.error("Something went wrong");
+      toast.error(P.somethingWrong);
     } finally {
       setLoading(false);
     }
@@ -81,17 +83,17 @@ function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
 
   return (
     <div className="flex min-h-screen flex-col">
-      <SiteHeader isAuthenticated />
+      <SiteHeader locale={locale} isAuthenticated />
       <div className="flex flex-1 items-center justify-center px-4 py-12">
         <Card className="w-full max-w-md">
           <CardHeader>
-            <CardTitle>Payment Status</CardTitle>
+            <CardTitle>{P.title}</CardTitle>
             <CardDescription>
               {payment
                 ? `${payment.invoiceNumber} · ${payment.amount} ${payment.currency}`
                 : loadError
-                  ? "Unable to load payment"
-                  : "Loading..."}
+                  ? P.loadFailed
+                  : P.loading}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -106,20 +108,19 @@ function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
                         : "warning"
                   }
                 >
-                  {payment.status}
+                  {paymentStatusLabel(payment.status, locale)}
                 </Badge>
               </div>
             )}
 
             {payment?.status === "PENDING" && !payment.providerConfigured && !payment.allowDemoPayments && (
               <div className="space-y-3 text-center">
-                <p className="text-sm text-slate-300">Payments not yet enabled</p>
+                <p className="text-sm text-slate-300">{P.notEnabled}</p>
                 <p className="text-xs text-slate-500">
-                  Card checkout is not configured. No payment was processed. Contact support or try again
-                  when online payments are available.
+                  {P.notEnabledDetail}
                 </p>
                 <Button asChild variant="outline" className="w-full">
-                  <Link href={localeHref("/dashboard", locale)}>Return to dashboard</Link>
+                  <Link href={localeHref("/dashboard", locale)}>{P.returnDashboard}</Link>
                 </Button>
               </div>
             )}
@@ -127,14 +128,14 @@ function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
             {payment?.status === "PENDING" && payment.allowDemoPayments && (
               <>
                 <p className="text-center text-sm text-amber-200/90">
-                  Development demo only — not a real payment. Disabled in production.
+                  {P.demoOnly}
                 </p>
                 <Button
                   className="w-full"
                   onClick={() => simulatePayment(true)}
                   disabled={loading}
                 >
-                  {loading ? "Processing..." : "Simulate successful payment (dev)"}
+                  {loading ? P.processing : P.simulateSuccess}
                 </Button>
                 <Button
                   variant="outline"
@@ -142,25 +143,24 @@ function PaymentDetail({ params }: { params: Promise<{ id: string }> }) {
                   onClick={() => simulatePayment(false)}
                   disabled={loading}
                 >
-                  Simulate failed payment (dev)
+                  {P.simulateFailure}
                 </Button>
               </>
             )}
 
             {payment?.status === "PENDING" && payment.providerConfigured && (
               <p className="text-center text-sm text-slate-400">
-                Complete checkout with the payment provider. Status updates after verified webhook
-                confirmation.
+                {P.providerPending}
               </p>
             )}
 
             {payment?.status === "PAID" && (
               <div className="text-center">
                 <CheckCircle2 className="mx-auto h-12 w-12 text-emerald-400" />
-                <p className="mt-2 text-white">Payment confirmed</p>
+                <p className="mt-2 text-white">{P.confirmed}</p>
               </div>
             )}
-            <DisclaimerBanner />
+            <DisclaimerBanner locale={locale} />
           </CardContent>
         </Card>
       </div>
